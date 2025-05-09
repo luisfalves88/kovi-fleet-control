@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Task } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { Calendar, Car, MapPin, User } from 'lucide-react';
+import { Calendar, Car, Clock, MapPin, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,22 @@ interface TaskCardProps {
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const navigate = useNavigate();
+  
+  // Calculate SLA status - this is a new function to display time urgency
+  const getSlaStatus = () => {
+    const createdAt = new Date(task.createdAt);
+    const now = new Date();
+    const hoursSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
+    
+    if (hoursSinceCreation >= 24) {
+      return { color: "bg-red-100 text-red-800", text: "Urgente" };
+    } else if (hoursSinceCreation >= 12) {
+      return { color: "bg-yellow-100 text-yellow-800", text: "Em risco" };
+    }
+    return { color: "bg-green-100 text-green-800", text: "No prazo" };
+  };
+  
+  const slaStatus = getSlaStatus();
   
   return (
     <Card className="w-full h-full hover:shadow-md transition-shadow">
@@ -38,7 +54,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-gray-500" />
-            <span className="text-sm truncate max-w-[250px]">{task.currentAddress}</span>
+            <span className="text-sm truncate max-w-[250px]" title={task.currentAddress}>
+              {task.currentAddress}
+            </span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -51,15 +69,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <span className="text-xs text-gray-500">
-              Criado {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true, locale: pt })}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span className="text-xs text-gray-500">
+                Criado {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true, locale: pt })}
+              </span>
+            </div>
+            <Badge className={slaStatus.color}>
+              <Clock className="h-3 w-3 mr-1" />
+              {slaStatus.text}
+            </Badge>
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="pt-2">
         <Button 
           variant="default" 
           className="w-full"

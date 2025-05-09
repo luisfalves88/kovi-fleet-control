@@ -36,3 +36,77 @@ export const getStatusColor = (status: string): string => {
   };
   return statusColorMap[status] || 'bg-gray-100 text-gray-800';
 };
+
+// New utility functions
+export const getStatusPriority = (status: string): number => {
+  const priorityMap: Record<string, number> = {
+    unlawfulAppropriation: 1, // Highest priority
+    towRequest: 2,
+    onRouteTow: 3,
+    allocateDriver: 4,
+    pendingCollection: 5,
+    onRouteCollection: 6,
+    underAnalysis: 7,
+    unlock: 8,
+    onRouteKovi: 9,
+    collected: 10,
+    returned: 11,
+    canceled: 12 // Lowest priority
+  };
+  
+  return priorityMap[status] || 99;
+};
+
+export const getSlaStatus = (createdAt: string) => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const hoursSinceCreation = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60));
+  
+  if (hoursSinceCreation >= 24) {
+    return { color: "bg-red-100 text-red-800", text: "Urgente", priority: 1 };
+  } else if (hoursSinceCreation >= 12) {
+    return { color: "bg-yellow-100 text-yellow-800", text: "Em risco", priority: 2 };
+  }
+  return { color: "bg-green-100 text-green-800", text: "No prazo", priority: 3 };
+};
+
+export const getNextPossibleStatuses = (currentStatus: string): Array<{value: string, label: string}> => {
+  const statusTransitions: Record<string, Array<{value: string, label: string}>> = {
+    allocateDriver: [
+      { value: 'pendingCollection', label: 'Pendente de recolha' },
+      { value: 'canceled', label: 'Cancelar tarefa' }
+    ],
+    pendingCollection: [
+      { value: 'onRouteCollection', label: 'Em rota de recolha' },
+      { value: 'returned', label: 'Devolvida' },
+      { value: 'allocateDriver', label: 'Voltar para alocação' },
+    ],
+    onRouteCollection: [
+      { value: 'collected', label: 'Recolhido' },
+      { value: 'returned', label: 'Devolvida' },
+      { value: 'pendingCollection', label: 'Voltar para pendente' },
+    ],
+    returned: [
+      { value: 'allocateDriver', label: 'Alocar novo chofer' },
+      { value: 'canceled', label: 'Cancelar tarefa' }
+    ],
+    collected: [
+      { value: 'onRouteKovi', label: 'Em rota para Kovi' },
+    ],
+    onRouteKovi: [
+      { value: 'underAnalysis', label: 'Em análise' }
+    ],
+    underAnalysis: [
+      { value: 'unlock', label: 'Desbloquear' },
+      { value: 'towRequest', label: 'Solicitar guincho' }
+    ],
+    towRequest: [
+      { value: 'onRouteTow', label: 'Em rota de guincho' }
+    ],
+    onRouteTow: [
+      { value: 'unlawfulAppropriation', label: 'Apropriação indébita' }
+    ]
+  };
+  
+  return statusTransitions[currentStatus] || [];
+};
