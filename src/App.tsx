@@ -1,25 +1,82 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import MainLayout from "@/components/layout/MainLayout";
+
+// Auth Pages
+import Login from "@/pages/auth/Login";
+import ResetPassword from "@/pages/auth/ResetPassword";
+
+// Main Pages
+import Dashboard from "@/pages/Dashboard";
+import Tasks from "@/pages/Tasks";
+import Conversations from "@/pages/Conversations";
+import Reports from "@/pages/Reports";
+
+// Admin Pages
+import Users from "@/pages/admin/Users";
+import Partners from "@/pages/admin/Partners";
+import Units from "@/pages/admin/Units";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Protected route component
+const ProtectedRoute = ({ children, requiredRoles = [] }: { children: React.ReactNode, requiredRoles?: string[] }) => {
+  const { isAuthenticated, user } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (requiredRoles.length > 0 && user && !requiredRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Layout wrapper with authentication check
+const ProtectedLayout = ({ children, requiredRoles = [] }: { children: React.ReactNode, requiredRoles?: string[] }) => {
+  return (
+    <ProtectedRoute requiredRoles={requiredRoles}>
+      <MainLayout>{children}</MainLayout>
+    </ProtectedRoute>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Main Routes */}
+            <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+            <Route path="/tasks" element={<ProtectedLayout><Tasks /></ProtectedLayout>} />
+            <Route path="/conversations" element={<ProtectedLayout requiredRoles={['admin', 'member', 'partner']}><Conversations /></ProtectedLayout>} />
+            <Route path="/reports" element={<ProtectedLayout requiredRoles={['admin', 'member']}><Reports /></ProtectedLayout>} />
+            
+            {/* Admin Routes */}
+            <Route path="/users" element={<ProtectedLayout requiredRoles={['admin']}><Users /></ProtectedLayout>} />
+            <Route path="/partners" element={<ProtectedLayout requiredRoles={['admin']}><Partners /></ProtectedLayout>} />
+            <Route path="/units" element={<ProtectedLayout requiredRoles={['admin']}><Units /></ProtectedLayout>} />
+            
+            {/* 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
