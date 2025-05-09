@@ -1,257 +1,131 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { UserRole } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { ArrowUpRight, ArrowDownRight, Clock, CheckCircle } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const userRole = user?.role as UserRole;
-  
-  // Mock data
-  const pendingTasks = 18;
-  const completedTasks = 45;
-  const inProgressTasks = 12;
-  const cancelledTasks = 5;
-  
-  const redSLA = 4; // Tarefas com SLA violado
-  const yellowSLA = 6; // Tarefas próximas do vencimento
-  const greenSLA = 8; // Tarefas com mais de 50% do tempo de SLA disponível
-  
-  // Data for different user roles
-  const roleSpecificData = {
-    admin: {
-      title: 'Administrador',
-      insight: 'Todas as operações de recolha',
-      metrics: [
-        { label: 'Total de usuários', value: 32 },
-        { label: 'Parceiros ativos', value: 8 },
-        { label: 'Unidades', value: 5 }
-      ]
-    },
-    member: {
-      title: 'Membro Kovi',
-      insight: 'Operações de recolha',
-      metrics: [
-        { label: 'Pendentes de desbloqueio', value: 3 },
-        { label: 'Em análise', value: 2 },
-        { label: 'Apropriação indébita', value: 1 }
-      ]
-    },
-    partner: {
-      title: 'Parceiro',
-      insight: 'Operações atribuídas',
-      metrics: [
-        { label: 'Tarefas atribuídas', value: 14 },
-        { label: 'Motoristas disponíveis', value: 8 },
-        { label: 'Taxa de sucesso', value: '87%' }
-      ]
-    },
-    driver: {
-      title: 'Chofer',
-      insight: 'Suas atribuições',
-      metrics: [
-        { label: 'Em rota', value: 2 },
-        { label: 'Pendentes', value: 3 },
-        { label: 'Concluídas hoje', value: 1 }
-      ]
+  // Mock data for the dashboard
+  const stats = {
+    pendingTasks: 28,
+    completedTasks: 145,
+    totalTasks: 173,
+    slaCompliance: {
+      violated: 7,
+      atRisk: 12,
+      onTrack: 9
     }
   };
   
-  const currentRoleData = roleSpecificData[userRole] || roleSpecificData.member;
+  // Calculate percentages
+  const completionRate = Math.round((stats.completedTasks / stats.totalTasks) * 100);
+  const pendingRate = Math.round((stats.pendingTasks / stats.totalTasks) * 100);
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Bem-vindo(a) {user?.name}, sua visão geral das operações de recolha
+          Bem-vindo ao sistema de gerenciamento de recolhas Kovi
         </p>
       </div>
-
-      {/* Role specific metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {currentRoleData.metrics.map((metric, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {metric.label}
-              </CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {currentRoleData.insight}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Task stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        {/* Completed Tasks */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Tarefas Completadas
+            </CardTitle>
+            <CardDescription className="text-3xl font-bold">
+              {stats.completedTasks}
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({completionRate}%)
+              </span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1 text-sm text-green-600">
+              <ArrowUpRight className="h-4 w-4" />
+              <span>23% no mês</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Tasks */}
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
               Tarefas Pendentes
             </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-yellow-500"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <CardDescription className="text-3xl font-bold">
+              {stats.pendingTasks}
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({pendingRate}%)
+              </span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              Recolhas aguardando processamento
-            </p>
+            <div className="flex items-center gap-1 text-sm text-red-600">
+              <ArrowDownRight className="h-4 w-4" />
+              <span>5% no mês</span>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tarefas Em Progresso
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-blue-500"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+
+        {/* SLA Status */}
+        <Card className="col-span-1 md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Status de SLA</CardTitle>
+            <CardDescription>
+              Monitoramento do tempo de atendimento
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{inProgressTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              Recolhas em processamento
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tarefas Finalizadas
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-green-500"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              +{completedTasks - 10} comparado ao mês anterior
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tarefas Canceladas
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-red-500"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cancelledTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              {((cancelledTasks / (pendingTasks + inProgressTasks + completedTasks + cancelledTasks)) * 100).toFixed(1)}% do total de tarefas
-            </p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-red-500" />
+                  <span>SLA Violado</span>
+                </div>
+                <span className="font-semibold">{stats.slaCompliance.violated}</span>
+              </div>
+              <Progress 
+                value={Math.round((stats.slaCompliance.violated / stats.pendingTasks) * 100)} 
+                className="h-2 bg-gray-200"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2 text-yellow-500" />
+                  <span>Em Risco</span>
+                </div>
+                <span className="font-semibold">{stats.slaCompliance.atRisk}</span>
+              </div>
+              <Progress 
+                value={Math.round((stats.slaCompliance.atRisk / stats.pendingTasks) * 100)} 
+                className="h-2 bg-gray-200"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  <span>No Prazo</span>
+                </div>
+                <span className="font-semibold">{stats.slaCompliance.onTrack}</span>
+              </div>
+              <Progress 
+                value={Math.round((stats.slaCompliance.onTrack / stats.pendingTasks) * 100)} 
+                className="h-2 bg-gray-200"
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* SLA Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Status de SLA</CardTitle>
-          <CardDescription>
-            Indicador de tempo para cumprimento das tarefas pendentes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-red-500" />
-                  <span className="text-sm font-medium">SLA violado</span>
-                </div>
-                <span className="text-sm">{redSLA} tarefas</span>
-              </div>
-              <Progress value={((redSLA / pendingTasks) * 100)} className="h-2 bg-slate-200" indicatorClassName="bg-red-500" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-yellow-500" />
-                  <span className="text-sm font-medium">SLA próximo do vencimento</span>
-                </div>
-                <span className="text-sm">{yellowSLA} tarefas</span>
-              </div>
-              <Progress value={((yellowSLA / pendingTasks) * 100)} className="h-2 bg-slate-200" indicatorClassName="bg-yellow-500" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full bg-green-500" />
-                  <span className="text-sm font-medium">SLA dentro do prazo</span>
-                </div>
-                <span className="text-sm">{greenSLA} tarefas</span>
-              </div>
-              <Progress value={((greenSLA / pendingTasks) * 100)} className="h-2 bg-slate-200" indicatorClassName="bg-green-500" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
