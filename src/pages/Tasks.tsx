@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import CreateTaskForm from "@/components/tasks/CreateTaskForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 
 const Tasks = () => {
   const { toast } = useToast();
@@ -125,9 +126,19 @@ const Tasks = () => {
         </TabsContent>
         
         <TabsContent value="kanban">
-          <div className="py-10 text-center">
-            Visualização Kanban em desenvolvimento.
-          </div>
+          {isLoading ? (
+            <div className="text-center py-10">Carregando tarefas...</div>
+          ) : isError ? (
+            <div className="text-center py-10 text-red-500">
+              Erro ao carregar tarefas. Tente novamente mais tarde.
+            </div>
+          ) : tasks && tasks.length > 0 ? (
+            <KanbanBoard tasks={tasks} onTaskUpdate={refetch} />
+          ) : (
+            <div className="text-center py-10">
+              Nenhuma tarefa encontrada com os filtros atuais.
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

@@ -13,42 +13,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-
-const getStatusName = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    allocateDriver: 'Alocar chofer',
-    pendingCollection: 'Pendente de recolha',
-    returned: 'Devolvida',
-    onRouteCollection: 'Em rota recolha',
-    unlock: 'Desbloqueio',
-    onRouteKovi: 'Em rota Kovi',
-    towRequest: 'Solicitação de guincho',
-    onRouteTow: 'Em rota guincho',
-    underAnalysis: 'Em análise',
-    unlawfulAppropriation: 'Apropriação Indébita',
-    collected: 'Recolhido',
-    canceled: 'Cancelado'
-  };
-  return statusMap[status] || status;
-};
-
-const getStatusColor = (status: string): string => {
-  const statusColorMap: Record<string, string> = {
-    allocateDriver: 'bg-yellow-100 text-yellow-800',
-    pendingCollection: 'bg-blue-100 text-blue-800',
-    returned: 'bg-purple-100 text-purple-800',
-    onRouteCollection: 'bg-indigo-100 text-indigo-800',
-    unlock: 'bg-pink-100 text-pink-800',
-    onRouteKovi: 'bg-cyan-100 text-cyan-800',
-    towRequest: 'bg-orange-100 text-orange-800',
-    onRouteTow: 'bg-amber-100 text-amber-800',
-    underAnalysis: 'bg-lime-100 text-lime-800',
-    unlawfulAppropriation: 'bg-rose-100 text-rose-800',
-    collected: 'bg-green-100 text-green-800',
-    canceled: 'bg-gray-100 text-gray-800'
-  };
-  return statusColorMap[status] || 'bg-gray-100 text-gray-800';
-};
+import { getStatusName, getStatusColor } from '@/lib/taskUtils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const TaskDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -134,9 +100,52 @@ const TaskDetail = () => {
     }
   };
 
+  const handleUpdateStatus = (newStatus: string) => {
+    if (id) {
+      updateStatusMutation.mutate({
+        taskId: id,
+        status: newStatus as any
+      });
+    }
+  };
+
+  const getAvailableStatusTransitions = () => {
+    if (!task) return [];
+    
+    // Define the allowed status transitions based on current status
+    const transitions: Record<string, { value: string; label: string }[]> = {
+      allocateDriver: [
+        { value: 'pendingCollection', label: 'Pendente de recolha' }
+      ],
+      pendingCollection: [
+        { value: 'onRouteCollection', label: 'Em rota de recolha' },
+        { value: 'returned', label: 'Devolvida' },
+        { value: 'allocateDriver', label: 'Voltar para alocação' },
+      ],
+      onRouteCollection: [
+        { value: 'collected', label: 'Recolhido' },
+        { value: 'returned', label: 'Devolvida' },
+        { value: 'pendingCollection', label: 'Voltar para pendente' },
+      ],
+      returned: [
+        { value: 'allocateDriver', label: 'Alocar novo chofer' }
+      ],
+      collected: [
+        { value: 'onRouteKovi', label: 'Em rota para Kovi' },
+      ],
+      onRouteKovi: [
+        { value: 'collected', label: 'Voltar para recolhido' }
+      ]
+    };
+    
+    return transitions[task.status] || [];
+  };
+
   const canCancelTask = user?.role === 'admin' || user?.role === 'member';
   const canAssignDriver = task?.status === 'allocateDriver' && 
     (user?.role === 'admin' || user?.role === 'member' || user?.role === 'partner');
+  
+  const canUpdateStatus = user?.role === 'admin' || user?.role === 'member';
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-96">Carregando detalhes da tarefa...</div>;
@@ -311,6 +320,33 @@ const TaskDetail = () => {
                 </Button>
               )}
 
+              {canUpdateStatus && task.status !== 'canceled' && task.status !== 'collected' && getAvailableStatusTransitions().length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      Atualizar Status
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Alterar para</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      {getAvailableStatusTransitions().map((transition) => (
+                        <DropdownMenuItem
+                          key={transition.value}
+                          onClick={() => handleUpdateStatus(transition.value)}
+                        >
+                          {transition.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
               {canCancelTask && task.status !== 'canceled' && task.status !== 'collected' && (
                 <Button 
                   variant="destructive" 
@@ -320,8 +356,6 @@ const TaskDetail = () => {
                   Cancelar Tarefa
                 </Button>
               )}
-
-              {/* Add other action buttons based on task status and user role here */}
             </CardContent>
           </Card>
 
