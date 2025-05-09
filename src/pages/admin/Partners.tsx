@@ -1,15 +1,21 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -18,365 +24,307 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { format } from "date-fns";
-import { Plus, MoreVertical, Search, Building, BuildingX } from "lucide-react";
+import { 
+  MoreHorizontal, 
+  ChevronDown,
+  Plus,
+  Filter,
+  Search,
+  Building,
+  MapPin,
+  Phone,
+  Mail
+} from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
 
-interface Partner {
-  id: string;
-  name: string;
-  cnpj: string;
-  address: string;
-  responsibleName: string;
-  responsiblePhone: string;
-  responsibleEmail: string;
-  isActive: boolean;
-  createdAt: Date;
-}
-
-// Mock Partners
-const mockPartners: Partner[] = [
+const mockPartners = [
   {
-    id: 'p-1',
-    name: 'Empresa Parceira A',
-    cnpj: '12.345.678/0001-90',
-    address: 'Av. Paulista, 1000, São Paulo, SP',
-    responsibleName: 'João Silva',
-    responsiblePhone: '(11) 98765-4321',
-    responsibleEmail: 'joao@parceiroa.com',
-    isActive: true,
-    createdAt: new Date(2023, 5, 10),
+    id: 1,
+    name: "Parceiro A",
+    contact: "João Silva",
+    phone: "11 99999-9999",
+    email: "joao@parceiroa.com.br",
+    address: "Rua A, 123 - São Paulo, SP",
+    status: "Ativo",
+    units: 5,
+    activeTasks: 22,
+    completionRate: 85,
   },
   {
-    id: 'p-2',
-    name: 'Empresa Parceira B',
-    cnpj: '98.765.432/0001-10',
-    address: 'Rua Augusta, 500, São Paulo, SP',
-    responsibleName: 'Maria Souza',
-    responsiblePhone: '(11) 91234-5678',
-    responsibleEmail: 'maria@parceirob.com',
-    isActive: true,
-    createdAt: new Date(2023, 8, 5),
+    id: 2,
+    name: "Parceiro B",
+    contact: "Maria Souza",
+    phone: "21 88888-8888",
+    email: "maria@parceirob.com.br",
+    address: "Av. B, 456 - Rio de Janeiro, RJ",
+    status: "Inativo",
+    units: 3,
+    activeTasks: 15,
+    completionRate: 78,
   },
   {
-    id: 'p-3',
-    name: 'Empresa Parceira C',
-    cnpj: '45.678.901/0001-23',
-    address: 'Av. Brasil, 2000, Rio de Janeiro, RJ',
-    responsibleName: 'Carlos Ferreira',
-    responsiblePhone: '(21) 98765-1234',
-    responsibleEmail: 'carlos@parceiroc.com',
-    isActive: false,
-    createdAt: new Date(2024, 1, 15),
-  }
+    id: 3,
+    name: "Parceiro C",
+    contact: "Carlos Ferreira",
+    phone: "31 77777-7777",
+    email: "carlos@parceiroc.com.br",
+    address: "Travessa C, 789 - Belo Horizonte, MG",
+    status: "Ativo",
+    units: 8,
+    activeTasks: 30,
+    completionRate: 92,
+  },
 ];
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Nome deve ter pelo menos 2 caracteres.",
-  }),
-  cnpj: z.string().min(14, {
-    message: "CNPJ deve ter pelo menos 14 caracteres.",
-  }).max(18),
-  address: z.string().min(5, {
-    message: "Endereço deve ter pelo menos 5 caracteres.",
-  }),
-  responsibleName: z.string().min(2, {
-    message: "Nome do responsável deve ter pelo menos 2 caracteres.",
-  }),
-  responsiblePhone: z.string().min(10, {
-    message: "Telefone deve ter pelo menos 10 dígitos.",
-  }),
-  responsibleEmail: z.string().email({
-    message: "Email inválido.",
-  }),
-});
-
-const PartnersPage = () => {
+const Partners = () => {
   const { toast } = useToast();
-  const [partners, setPartners] = useState<Partner[]>(mockPartners);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      cnpj: "",
-      address: "",
-      responsibleName: "",
-      responsiblePhone: "",
-      responsibleEmail: "",
-    },
-  });
-  
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would query the API
-    console.log("Searching for:", searchQuery);
+  const [open, setOpen] = useState(false);
+  const [partners, setPartners] = useState(mockPartners);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("asc");
+
+  const handleCreatePartner = () => {
+    setOpen(true);
   };
-  
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // In a real app, this would submit to an API
-    console.log("Form values:", values);
-    
-    // Create a new partner
-    const newPartner: Partner = {
-      id: `partner-${Date.now()}`,
-      name: values.name,
-      cnpj: values.cnpj,
-      address: values.address,
-      responsibleName: values.responsibleName,
-      responsiblePhone: values.responsiblePhone,
-      responsibleEmail: values.responsibleEmail,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    
-    setPartners([...partners, newPartner]);
-    setIsCreateDialogOpen(false);
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+  };
+
+  const handleSavePartner = () => {
     toast({
       title: "Parceiro criado",
-      description: "O parceiro foi cadastrado com sucesso.",
+      description: "O parceiro foi criado com sucesso.",
     });
-    
-    form.reset();
-  };
-  
-  const handleToggleStatus = (partnerId: string) => {
-    setPartners(partners.map(partner => {
-      if (partner.id === partnerId) {
-        const newStatus = !partner.isActive;
-        toast({
-          title: newStatus ? "Parceiro ativado" : "Parceiro desativado",
-          description: `O parceiro foi ${newStatus ? 'ativado' : 'desativado'} com sucesso.`,
-        });
-        return { ...partner, isActive: newStatus };
-      }
-      return partner;
-    }));
+    setOpen(false);
   };
 
-  // Filter partners based on search query
-  const filteredPartners = searchQuery
-    ? partners.filter(partner => 
-        partner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        partner.cnpj.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        partner.responsibleName.toLowerCase().includes(searchQuery.toLowerCase()))
-    : partners;
+  const handleEditPartner = (id) => {
+    toast({
+      title: "Parceiro atualizado",
+      description: "O parceiro foi atualizado com sucesso.",
+    });
+  };
+
+  const handleDeletePartner = (id) => {
+    setPartners(partners.filter((partner) => partner.id !== id));
+    toast({
+      title: "Parceiro excluído",
+      description: "O parceiro foi excluído com sucesso.",
+    });
+  };
+
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedPartners = React.useMemo(() => {
+    if (!sortColumn) return partners;
+
+    return [...partners].sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      if (aValue < bValue) {
+        return sortDirection === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortDirection === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [partners, sortColumn, sortDirection]);
+
+  const filteredPartners = sortedPartners.filter((partner) =>
+    partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    partner.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    partner.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Parceiros</h1>
         <p className="text-muted-foreground">
-          Gerenciamento de empresas parceiras
+          Gerenciar parceiros e suas informações
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-        <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-sm">
-          <Input
-            placeholder="Buscar parceiros..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-          <Button type="submit" variant="secondary">
-            <Search className="h-4 w-4" />
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>Lista de Parceiros</CardTitle>
+          <Button onClick={handleCreatePartner}>
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Parceiro
           </Button>
-        </form>
-
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Parceiro
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[250px]">Nome da Empresa</TableHead>
-              <TableHead className="hidden md:table-cell">CNPJ</TableHead>
-              <TableHead className="hidden md:table-cell">Responsável</TableHead>
-              <TableHead className="hidden lg:table-cell">Email</TableHead>
-              <TableHead className="hidden lg:table-cell">Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPartners.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  Nenhum parceiro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredPartners.map((partner) => (
-                <TableRow key={partner.id}>
-                  <TableCell className="font-medium">{partner.name}</TableCell>
-                  <TableCell className="hidden md:table-cell">{partner.cnpj}</TableCell>
-                  <TableCell className="hidden md:table-cell">{partner.responsibleName}</TableCell>
-                  <TableCell className="hidden lg:table-cell">{partner.responsibleEmail}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <Badge variant={partner.isActive ? "default" : "secondary"}>
-                      {partner.isActive ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menu</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleToggleStatus(partner.id)}>
-                          {partner.isActive ? (
-                            <>
-                              <BuildingX className="mr-2 h-4 w-4" />
-                              Desativar Parceiro
-                            </>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="all" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="active">Ativos</TabsTrigger>
+              <TabsTrigger value="inactive">Inativos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Input
+                    type="search"
+                    placeholder="Buscar parceiro..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <Button variant="outline" size="sm" className="ml-2">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtrar
+                  </Button>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="ml-auto">
+                      Ações em massa
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      Ativar selecionados
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Desativar selecionados
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Excluir selecionados
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox />
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("name")}>
+                        Nome
+                        {sortColumn === "name" && (
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        )}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("contact")}>
+                        Contato
+                        {sortColumn === "contact" && (
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        )}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("email")}>
+                        Email
+                        {sortColumn === "email" && (
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        )}
+                      </TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPartners.map((partner) => (
+                      <TableRow key={partner.id}>
+                        <TableCell className="font-medium">
+                          <Checkbox />
+                        </TableCell>
+                        <TableCell>{partner.name}</TableCell>
+                        <TableCell>{partner.contact}</TableCell>
+                        <TableCell>{partner.email}</TableCell>
+                        <TableCell>
+                          {partner.status === "Ativo" ? (
+                            <Badge variant="outline">Ativo</Badge>
                           ) : (
-                            <>
-                              <Building className="mr-2 h-4 w-4" />
-                              Ativar Parceiro
-                            </>
+                            <Badge>Inativo</Badge>
                           )}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditPartner(partner.id)}
+                              >
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePartner(partner.id)}
+                              >
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+            <TabsContent value="active">
+              <div>
+                <p>Lista de parceiros ativos.</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="inactive">
+              <div>
+                <p>Lista de parceiros inativos.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
-      {/* Create Partner Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Cadastrar Novo Parceiro</DialogTitle>
+            <DialogTitle>Adicionar Novo Parceiro</DialogTitle>
             <DialogDescription>
-              Preencha os campos abaixo para cadastrar uma nova empresa parceira.
+              Preencha os campos abaixo para criar um novo parceiro.
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da Empresa</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome da empresa" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="cnpj"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CNPJ</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="00.000.000/0000-00" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Endereço Matriz</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Endereço completo" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="responsibleName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Responsável</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome completo do responsável" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="responsiblePhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefone do Responsável</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="(00) 00000-0000" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="responsibleEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email do Responsável</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="email" placeholder="exemplo@email.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">Cadastrar Parceiro</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nome
+              </Label>
+              <Input id="name" defaultValue="Antonio Silva" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="contact" className="text-right">
+                Contato
+              </Label>
+              <Input id="contact" defaultValue="antonio@email.com" className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleSavePartner}>Salvar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 };
 
-export default PartnersPage;
+export default Partners;

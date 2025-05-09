@@ -19,7 +19,7 @@ import {
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { CalendarIcon, Download, BarChart, PieChart, LineChart as LineChartIcon } from "lucide-react";
-import { LineChart, BarChart as BarChartReact, PieChart as PieChartReact } from "@/components/ui/chart";
+import { LineChart, BarChart as BarChartReact, PieChart as PieChartReact } from "@/components/ui/charts";
 import { useToast } from "@/hooks/use-toast";
 
 const ReportsPage = () => {
