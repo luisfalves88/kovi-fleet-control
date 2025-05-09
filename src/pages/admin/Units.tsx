@@ -2,213 +2,290 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, MapPin } from 'lucide-react';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { format } from "date-fns";
+import { Plus, MoreVertical, Search, Home, HomeIcon } from "lucide-react";
 
-// Mock data for units
-const mockUnits = [
+interface Unit {
+  id: string;
+  name: string;
+  address: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+// Mock Units
+const mockUnits: Unit[] = [
   {
-    id: '1',
+    id: 'u-1',
+    name: 'Pátio São Paulo - Zona Leste',
+    address: 'Av. Aricanduva, 5000, São Paulo, SP',
+    isActive: true,
+    createdAt: new Date(2023, 5, 10),
+  },
+  {
+    id: 'u-2',
     name: 'Pátio São Paulo - Zona Sul',
     address: 'Av. Interlagos, 2000, São Paulo, SP',
     isActive: true,
-    createdAt: new Date(2023, 1, 10)
+    createdAt: new Date(2023, 8, 5),
   },
   {
-    id: '2',
-    name: 'Pátio São Paulo - Zona Oeste',
-    address: 'Rua Butantã, 500, São Paulo, SP',
-    isActive: true,
-    createdAt: new Date(2023, 3, 15)
-  },
-  {
-    id: '3',
-    name: 'Pátio Rio de Janeiro - Centro',
-    address: 'Av. Rio Branco, 100, Rio de Janeiro, RJ',
+    id: 'u-3',
+    name: 'Pátio Rio de Janeiro',
+    address: 'Av. Brasil, 15000, Rio de Janeiro, RJ',
     isActive: false,
-    createdAt: new Date(2023, 5, 20)
-  },
-  {
-    id: '4',
-    name: 'Pátio Belo Horizonte',
-    address: 'Av. Amazonas, 1200, Belo Horizonte, MG',
-    isActive: true,
-    createdAt: new Date(2023, 7, 5)
+    createdAt: new Date(2024, 1, 15),
   }
 ];
 
-const Units = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Nome deve ter pelo menos 2 caracteres.",
+  }),
+  address: z.string().min(5, {
+    message: "Endereço deve ter pelo menos 5 caracteres.",
+  }),
+});
+
+const UnitsPage = () => {
+  const { toast } = useToast();
+  const [units, setUnits] = useState<Unit[]>(mockUnits);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
-  // Form state for new unit
-  const [newUnit, setNewUnit] = useState({
-    name: '',
-    address: '',
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+    },
   });
-
-  // Filter units based on search
-  const filteredUnits = mockUnits.filter(unit => 
-    unit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    unit.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewUnit(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, we would submit the form data to an API
-    console.log("Creating new unit:", newUnit);
-    setIsCreateDialogOpen(false);
-    // Reset form
-    setNewUnit({
-      name: '',
-      address: '',
-    });
+    // In a real app, this would query the API
+    console.log("Searching for:", searchQuery);
   };
+  
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // In a real app, this would submit to an API
+    console.log("Form values:", values);
+    
+    // Create a new unit
+    const newUnit: Unit = {
+      id: `unit-${Date.now()}`,
+      name: values.name,
+      address: values.address,
+      isActive: true,
+      createdAt: new Date(),
+    };
+    
+    setUnits([...units, newUnit]);
+    setIsCreateDialogOpen(false);
+    toast({
+      title: "Unidade cadastrada",
+      description: "A unidade foi cadastrada com sucesso.",
+    });
+    
+    form.reset();
+  };
+  
+  const handleToggleStatus = (unitId: string) => {
+    setUnits(units.map(unit => {
+      if (unit.id === unitId) {
+        const newStatus = !unit.isActive;
+        toast({
+          title: newStatus ? "Unidade ativada" : "Unidade desativada",
+          description: `A unidade foi ${newStatus ? 'ativada' : 'desativada'} com sucesso.`,
+        });
+        return { ...unit, isActive: newStatus };
+      }
+      return unit;
+    }));
+  };
+
+  // Filter units based on search query
+  const filteredUnits = searchQuery
+    ? units.filter(unit => 
+        unit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        unit.address.toLowerCase().includes(searchQuery.toLowerCase()))
+    : units;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Unidades</h2>
-          <p className="text-muted-foreground">
-            Gerencie os pátios onde os veículos podem ser entregues
-          </p>
-        </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-kovi-red hover:bg-kovi-red/90">
-              <Plus className="mr-2 h-4 w-4" /> Nova Unidade
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Nova Unidade</DialogTitle>
-              <DialogDescription>
-                Preencha os campos abaixo para adicionar um novo pátio de entrega.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome da Unidade</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Nome da unidade"
-                    value={newUnit.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="address">Endereço</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    placeholder="Endereço completo"
-                    value={newUnit.address}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-kovi-red hover:bg-kovi-red/90">Salvar</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Unidades</h1>
+        <p className="text-muted-foreground">
+          Gerenciamento de unidades de entrega de veículos
+        </p>
       </div>
 
-      {/* Search bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-sm">
           <Input
-            placeholder="Buscar por nome ou endereço..."
-            className="pl-8"
+            placeholder="Buscar unidades..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
           />
-        </div>
+          <Button type="submit" variant="secondary">
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
+
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Unidade
+        </Button>
       </div>
 
-      {/* Units table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[300px]">Nome da Unidade</TableHead>
               <TableHead>Endereço</TableHead>
-              <TableHead>Data de Cadastro</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="hidden md:table-cell w-[150px]">Status</TableHead>
+              <TableHead className="hidden md:table-cell">Data de Criação</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUnits.length > 0 ? (
-              filteredUnits.map(unit => (
+            {filteredUnits.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Nenhuma unidade encontrada.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredUnits.map((unit) => (
                 <TableRow key={unit.id}>
                   <TableCell className="font-medium">{unit.name}</TableCell>
                   <TableCell>{unit.address}</TableCell>
-                  <TableCell>{unit.createdAt.toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={unit.isActive ? "border-green-500 text-green-700" : "border-red-500 text-red-700"}
-                    >
-                      {unit.isActive ? 'Ativo' : 'Inativo'}
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant={unit.isActive ? "default" : "secondary"}>
+                      {unit.isActive ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {format(new Date(unit.createdAt), "dd/MM/yyyy")}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        Editar
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={unit.isActive ? "text-red-500" : "text-green-500"}
-                      >
-                        {unit.isActive ? 'Desativar' : 'Ativar'}
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleToggleStatus(unit.id)}>
+                          {unit.isActive ? (
+                            <>
+                              <HomeIcon className="mr-2 h-4 w-4" />
+                              Desativar Unidade
+                            </>
+                          ) : (
+                            <>
+                              <Home className="mr-2 h-4 w-4" />
+                              Ativar Unidade
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-6">
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <MapPin className="h-12 w-12 mb-2" />
-                    <p>Nenhuma unidade encontrada</p>
-                  </div>
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Create Unit Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Nova Unidade</DialogTitle>
+            <DialogDescription>
+              Preencha os campos abaixo para cadastrar uma nova unidade de entrega.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Unidade</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome da unidade" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endereço</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Endereço completo" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Cadastrar Unidade</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default Units;
+export default UnitsPage;

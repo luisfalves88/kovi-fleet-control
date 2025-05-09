@@ -1,287 +1,294 @@
 
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Paperclip } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Search, Send } from "lucide-react";
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Mock data for chat messages
-const mockChats = [
+// Mock conversation data
+const mockConversations = [
   {
-    id: '1',
-    taskId: '101',
-    licensePlate: 'ABC1234',
+    id: "conv-1",
+    taskId: "task-1",
+    taskPlate: "ABC1234",
     lastMessage: {
-      userId: '1',
-      userName: 'Carlos Silva',
-      userRole: 'admin',
-      message: 'Precisamos de uma atualização sobre esta recolha',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-      isRead: false,
+      id: "msg-1",
+      senderId: "1",
+      senderName: "Admin Kovi",
+      text: "Por favor, verifique a situação do veículo.",
+      timestamp: new Date(2024, 4, 7, 14, 35),
+      read: false
     },
+    messages: [
+      {
+        id: "msg-0",
+        senderId: "3",
+        senderName: "Parceiro Exemplo",
+        text: "Bom dia, precisamos de mais informações sobre o cliente.",
+        timestamp: new Date(2024, 4, 7, 10, 15),
+        read: true
+      },
+      {
+        id: "msg-1",
+        senderId: "1",
+        senderName: "Admin Kovi",
+        text: "Por favor, verifique a situação do veículo.",
+        timestamp: new Date(2024, 4, 7, 14, 35),
+        read: false
+      }
+    ]
   },
   {
-    id: '2',
-    taskId: '102',
-    licensePlate: 'XYZ5678',
+    id: "conv-2",
+    taskId: "task-2",
+    taskPlate: "DEF5678",
     lastMessage: {
-      userId: '3',
-      userName: 'João Santos',
-      userRole: 'partner',
-      message: 'O motorista está a caminho, deve chegar em 30 minutos',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-      isRead: true,
+      id: "msg-2",
+      senderId: "2",
+      senderName: "Membro Kovi",
+      text: "Motorista alocado. Favor confirmar.",
+      timestamp: new Date(2024, 4, 7, 9, 20),
+      read: true
     },
+    messages: [
+      {
+        id: "msg-2",
+        senderId: "2",
+        senderName: "Membro Kovi",
+        text: "Motorista alocado. Favor confirmar.",
+        timestamp: new Date(2024, 4, 7, 9, 20),
+        read: true
+      }
+    ]
   },
   {
-    id: '3',
-    taskId: '103',
-    licensePlate: 'DEF9012',
+    id: "conv-3",
+    taskId: "task-3",
+    taskPlate: "GHI9012",
     lastMessage: {
-      userId: '2',
-      userName: 'Marina Oliveira',
-      userRole: 'member',
-      message: 'Cliente informou que o carro não está mais no endereço cadastrado',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      isRead: true,
+      id: "msg-3",
+      senderId: "3",
+      senderName: "Parceiro Exemplo",
+      text: "Cliente não está atendendo o telefone.",
+      timestamp: new Date(2024, 4, 6, 16, 45),
+      read: false
     },
-  },
-  {
-    id: '4',
-    taskId: '104',
-    licensePlate: 'GHI3456',
-    lastMessage: {
-      userId: '1',
-      userName: 'Carlos Silva',
-      userRole: 'admin',
-      message: 'Preciso que confirme se o veículo já foi liberado',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-      isRead: true,
-    },
-  },
+    messages: [
+      {
+        id: "msg-3",
+        senderId: "3",
+        senderName: "Parceiro Exemplo",
+        text: "Cliente não está atendendo o telefone.",
+        timestamp: new Date(2024, 4, 6, 16, 45),
+        read: false
+      }
+    ]
+  }
 ];
 
-// Mock messages for the selected chat
-const mockMessages = [
-  {
-    id: 'm1',
-    taskId: '101',
-    userId: '1',
-    userName: 'Carlos Silva',
-    userRole: 'admin',
-    message: 'Olá, precisamos de uma atualização sobre esta recolha',
-    timestamp: new Date(Date.now() - 1000 * 60 * 20), // 20 minutes ago
-    isRead: true,
-  },
-  {
-    id: 'm2',
-    taskId: '101',
-    userId: '3',
-    userName: 'João Santos',
-    userRole: 'partner',
-    message: 'Bom dia! O chofer já foi designado e está a caminho do local',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-    isRead: true,
-  },
-  {
-    id: 'm3',
-    taskId: '101',
-    userId: '2',
-    userName: 'Marina Oliveira',
-    userRole: 'member',
-    message: 'Excelente! Por favor, mantenha-nos informados quando o veículo for localizado',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
-    isRead: true,
-  },
-  {
-    id: 'm4',
-    taskId: '101',
-    userId: '3',
-    userName: 'João Santos',
-    userRole: 'partner',
-    message: 'O chofer acabou de chegar ao local, mas o veículo não está lá. Está tentando contato com o cliente.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    isRead: false,
-  },
-];
+const fetchConversations = async () => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return mockConversations;
+};
 
 const Conversations = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChat, setSelectedChat] = useState(mockChats[0]);
-  const [newMessage, setNewMessage] = useState('');
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeConversation, setActiveConversation] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState("");
 
-  // Filter chats based on search
-  const filteredChats = mockChats.filter(chat => 
-    chat.licensePlate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.lastMessage.message.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: conversations, isLoading } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: fetchConversations,
+  });
 
-  // Format time for display
-  const formatMessageTime = (date: Date) => {
-    const today = new Date();
-    const isToday = today.toDateString() === date.toDateString();
-    
-    if (isToday) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
+  const activeConversationData = conversations?.find(conv => conv.id === activeConversation);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      console.log('Sending message:', newMessage);
-      // In a real app, this would send the message to an API
-      setNewMessage('');
-    }
+    // Search implementation would go here
   };
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() === "" || !activeConversation) return;
+    
+    // In a real app, this would send the message to the API
+    console.log("Sending message:", newMessage, "to conversation:", activeConversation);
+    
+    // Clear the input
+    setNewMessage("");
+  };
+
+  // Filter conversations based on user role
+  const filteredConversations = conversations?.filter(conv => {
+    // For admin and member Kovi, show all conversations
+    if (user?.role === 'admin' || user?.role === 'member') return true;
+    
+    // For partners, only show conversations assigned to them
+    // In a real app, this would check if the partner is assigned to the task
+    return user?.role === 'partner';
+  });
+
+  // Filter conversations by search query
+  const searchedConversations = filteredConversations?.filter(conv => {
+    if (!searchQuery) return true;
+    return (
+      conv.taskPlate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conv.messages.some(msg => 
+        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  });
 
   return (
-    <div className="space-y-4 h-[calc(100vh-8rem)] animate-fade-in">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Conversações</h2>
+        <h1 className="text-3xl font-bold tracking-tight">Conversações</h1>
         <p className="text-muted-foreground">
-          Acompanhe e participe das conversas sobre as tarefas
+          Gerenciamento de conversas de tarefas
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-        {/* Chat List */}
-        <div className="md:col-span-1 border rounded-lg overflow-hidden flex flex-col">
-          <div className="p-4 border-b">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar conversas..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-sm">
+          <Input
+            placeholder="Buscar por placa ou mensagem..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+          <Button type="submit" variant="secondary">
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Conversation List */}
+        <div className="md:col-span-1 border rounded-lg overflow-hidden">
+          <div className="p-4 bg-muted/50 border-b font-medium">
+            Conversas
           </div>
-          
-          <ScrollArea className="flex-grow">
-            {filteredChats.map(chat => (
-              <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
-                className={`p-3 cursor-pointer hover:bg-muted transition-colors ${
-                  selectedChat?.id === chat.id ? 'bg-muted' : ''
-                } ${!chat.lastMessage.isRead ? 'font-semibold' : ''}`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="text-md flex items-center gap-2">
-                    <span className="bg-kovi-red text-white text-xs px-2 py-1 rounded">
-                      {chat.licensePlate}
-                    </span>
-                    {!chat.lastMessage.isRead && (
-                      <span className="w-2 h-2 bg-kovi-red rounded-full"></span>
-                    )}
-                  </h3>
-                  <span className="text-xs text-muted-foreground">
-                    {formatMessageTime(chat.lastMessage.timestamp)}
-                  </span>
+          <div className="max-h-[70vh] overflow-y-auto">
+            {isLoading ? (
+              <div className="p-4 text-center">Carregando conversas...</div>
+            ) : searchedConversations && searchedConversations.length > 0 ? (
+              searchedConversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`p-4 border-b cursor-pointer transition-colors hover:bg-muted/30 ${
+                    activeConversation === conversation.id ? "bg-muted/50" : ""
+                  } ${!conversation.lastMessage.read ? "font-semibold" : ""}`}
+                  onClick={() => setActiveConversation(conversation.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{conversation.taskPlate}</span>
+                      {!conversation.lastMessage.read && (
+                        <Badge className="bg-primary h-2 w-2 p-0 rounded-full" />
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(conversation.lastMessage.timestamp, "dd/MM HH:mm")}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground truncate">
+                    <span className="font-medium">{conversation.lastMessage.senderName}:</span>{" "}
+                    {conversation.lastMessage.text}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs bg-kovi-purple text-white">
-                      {chat.lastMessage.userName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm truncate text-muted-foreground">
-                    <span className="font-medium text-foreground">{chat.lastMessage.userName}: </span>
-                    {chat.lastMessage.message}
-                  </p>
-                </div>
-                <Separator className="mt-3" />
+              ))
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">
+                Nenhuma conversa encontrada
               </div>
-            ))}
-          </ScrollArea>
+            )}
+          </div>
         </div>
-        
-        {/* Chat Messages */}
-        <div className="md:col-span-2 border rounded-lg overflow-hidden flex flex-col">
-          {selectedChat ? (
+
+        {/* Chat Panel */}
+        <div className="md:col-span-2 border rounded-lg flex flex-col">
+          {activeConversationData ? (
             <>
-              <div className="p-4 border-b flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <span className="bg-kovi-purple text-white px-2 py-1 rounded">
-                      {selectedChat.licensePlate}
-                    </span>
-                    <span className="text-muted-foreground text-sm">
-                      Task #{selectedChat.taskId}
-                    </span>
-                  </h3>
+              <div className="p-4 bg-muted/50 border-b">
+                <div className="font-medium">{activeConversationData.taskPlate}</div>
+                <div className="text-xs text-muted-foreground">
+                  Tarefa #{activeConversationData.taskId}
                 </div>
-                <Button variant="ghost" size="sm">Ver Tarefa</Button>
               </div>
               
-              <ScrollArea className="flex-grow p-4">
-                <div className="space-y-4">
-                  {mockMessages.map(message => {
-                    // Determine if message is from the logged in user (simplified for demo)
-                    const isCurrentUser = message.userId === '1'; // Assuming logged in user is admin with ID 1
-                    
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                      >
+              <div className="flex-1 p-4 overflow-y-auto max-h-[50vh]">
+                {activeConversationData.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex mb-4 ${
+                      message.senderId === user?.id ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div className="flex gap-2 max-w-[80%]">
+                      {message.senderId !== user?.id && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div>
+                        {message.senderId !== user?.id && (
+                          <div className="text-xs font-medium">{message.senderName}</div>
+                        )}
                         <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            isCurrentUser
-                              ? 'bg-kovi-purple text-white rounded-tr-none'
-                              : 'bg-muted rounded-tl-none'
+                          className={`p-3 rounded-lg ${
+                            message.senderId === user?.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
                           }`}
                         >
-                          {!isCurrentUser && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <Avatar className="h-5 w-5">
-                                <AvatarFallback className="text-[10px]">
-                                  {message.userName.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs font-medium">{message.userName}</span>
-                            </div>
-                          )}
-                          <p className="text-sm">{message.message}</p>
-                          <div className={`text-xs mt-1 ${isCurrentUser ? 'text-white/70' : 'text-muted-foreground'}`}>
-                            {formatMessageTime(message.timestamp)}
-                          </div>
+                          {message.text}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {format(message.timestamp, "dd/MM/yyyy HH:mm", { locale: pt })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+                      {message.senderId === user?.id && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
               
               <div className="p-4 border-t">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <Button type="button" size="icon" variant="ghost">
-                    <Paperclip className="h-4 w-4" />
-                  </Button>
-                  <Input
+                <div className="flex gap-2">
+                  <Textarea
                     placeholder="Digite sua mensagem..."
+                    className="resize-none"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-grow"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                   />
-                  <Button type="submit" size="sm">
-                    <Send className="h-4 w-4 mr-1" /> Enviar
+                  <Button onClick={handleSendMessage} size="icon" className="self-end">
+                    <Send className="h-4 w-4" />
                   </Button>
-                </form>
+                </div>
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center">
-                <p>Selecione uma conversa para visualizar</p>
-              </div>
+            <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">
+              Selecione uma conversa para iniciar o chat
             </div>
           )}
         </div>

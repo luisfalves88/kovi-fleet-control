@@ -2,285 +2,381 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Building } from 'lucide-react';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { format } from "date-fns";
+import { Plus, MoreVertical, Search, Building, BuildingX } from "lucide-react";
 
-// Mock data for partners
-const mockPartners = [
+interface Partner {
+  id: string;
+  name: string;
+  cnpj: string;
+  address: string;
+  responsibleName: string;
+  responsiblePhone: string;
+  responsibleEmail: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+// Mock Partners
+const mockPartners: Partner[] = [
   {
-    id: '1',
-    name: 'Recolha Express',
+    id: 'p-1',
+    name: 'Empresa Parceira A',
     cnpj: '12.345.678/0001-90',
     address: 'Av. Paulista, 1000, São Paulo, SP',
-    responsibleName: 'Roberto Santos',
+    responsibleName: 'João Silva',
     responsiblePhone: '(11) 98765-4321',
-    responsibleEmail: 'roberto@recolhaexpress.com',
+    responsibleEmail: 'joao@parceiroa.com',
     isActive: true,
-    createdAt: new Date(2023, 1, 10)
+    createdAt: new Date(2023, 5, 10),
   },
   {
-    id: '2',
-    name: 'Transportes Seguro',
-    cnpj: '23.456.789/0001-01',
+    id: 'p-2',
+    name: 'Empresa Parceira B',
+    cnpj: '98.765.432/0001-10',
     address: 'Rua Augusta, 500, São Paulo, SP',
-    responsibleName: 'Ana Maria Oliveira',
-    responsiblePhone: '(11) 97654-3210',
-    responsibleEmail: 'ana@transporteseguro.com',
+    responsibleName: 'Maria Souza',
+    responsiblePhone: '(11) 91234-5678',
+    responsibleEmail: 'maria@parceirob.com',
     isActive: true,
-    createdAt: new Date(2023, 3, 15)
+    createdAt: new Date(2023, 8, 5),
   },
   {
-    id: '3',
-    name: 'GuinchoFácil',
-    cnpj: '34.567.890/0001-12',
-    address: 'Av. Rio Branco, 100, Rio de Janeiro, RJ',
-    responsibleName: 'Carlos Eduardo',
-    responsiblePhone: '(21) 96543-2109',
-    responsibleEmail: 'carlos@guinchofacil.com',
+    id: 'p-3',
+    name: 'Empresa Parceira C',
+    cnpj: '45.678.901/0001-23',
+    address: 'Av. Brasil, 2000, Rio de Janeiro, RJ',
+    responsibleName: 'Carlos Ferreira',
+    responsiblePhone: '(21) 98765-1234',
+    responsibleEmail: 'carlos@parceiroc.com',
     isActive: false,
-    createdAt: new Date(2023, 5, 20)
+    createdAt: new Date(2024, 1, 15),
   }
 ];
 
-const Partners = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Nome deve ter pelo menos 2 caracteres.",
+  }),
+  cnpj: z.string().min(14, {
+    message: "CNPJ deve ter pelo menos 14 caracteres.",
+  }).max(18),
+  address: z.string().min(5, {
+    message: "Endereço deve ter pelo menos 5 caracteres.",
+  }),
+  responsibleName: z.string().min(2, {
+    message: "Nome do responsável deve ter pelo menos 2 caracteres.",
+  }),
+  responsiblePhone: z.string().min(10, {
+    message: "Telefone deve ter pelo menos 10 dígitos.",
+  }),
+  responsibleEmail: z.string().email({
+    message: "Email inválido.",
+  }),
+});
+
+const PartnersPage = () => {
+  const { toast } = useToast();
+  const [partners, setPartners] = useState<Partner[]>(mockPartners);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
-  // Form state for new partner
-  const [newPartner, setNewPartner] = useState({
-    name: '',
-    cnpj: '',
-    address: '',
-    responsibleName: '',
-    responsiblePhone: '',
-    responsibleEmail: '',
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      cnpj: "",
+      address: "",
+      responsibleName: "",
+      responsiblePhone: "",
+      responsibleEmail: "",
+    },
   });
-
-  // Filter partners based on search
-  const filteredPartners = mockPartners.filter(partner => 
-    partner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    partner.cnpj.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    partner.responsibleName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewPartner(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, we would submit the form data to an API
-    console.log("Creating new partner:", newPartner);
-    setIsCreateDialogOpen(false);
-    // Reset form
-    setNewPartner({
-      name: '',
-      cnpj: '',
-      address: '',
-      responsibleName: '',
-      responsiblePhone: '',
-      responsibleEmail: '',
-    });
+    // In a real app, this would query the API
+    console.log("Searching for:", searchQuery);
   };
+  
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // In a real app, this would submit to an API
+    console.log("Form values:", values);
+    
+    // Create a new partner
+    const newPartner: Partner = {
+      id: `partner-${Date.now()}`,
+      name: values.name,
+      cnpj: values.cnpj,
+      address: values.address,
+      responsibleName: values.responsibleName,
+      responsiblePhone: values.responsiblePhone,
+      responsibleEmail: values.responsibleEmail,
+      isActive: true,
+      createdAt: new Date(),
+    };
+    
+    setPartners([...partners, newPartner]);
+    setIsCreateDialogOpen(false);
+    toast({
+      title: "Parceiro criado",
+      description: "O parceiro foi cadastrado com sucesso.",
+    });
+    
+    form.reset();
+  };
+  
+  const handleToggleStatus = (partnerId: string) => {
+    setPartners(partners.map(partner => {
+      if (partner.id === partnerId) {
+        const newStatus = !partner.isActive;
+        toast({
+          title: newStatus ? "Parceiro ativado" : "Parceiro desativado",
+          description: `O parceiro foi ${newStatus ? 'ativado' : 'desativado'} com sucesso.`,
+        });
+        return { ...partner, isActive: newStatus };
+      }
+      return partner;
+    }));
+  };
+
+  // Filter partners based on search query
+  const filteredPartners = searchQuery
+    ? partners.filter(partner => 
+        partner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        partner.cnpj.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        partner.responsibleName.toLowerCase().includes(searchQuery.toLowerCase()))
+    : partners;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Parceiros</h2>
-          <p className="text-muted-foreground">
-            Gerencie as empresas parceiras
-          </p>
-        </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-kovi-red hover:bg-kovi-red/90">
-              <Plus className="mr-2 h-4 w-4" /> Novo Parceiro
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Parceiro</DialogTitle>
-              <DialogDescription>
-                Preencha os campos abaixo para adicionar uma nova empresa parceira.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome da Empresa</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Nome da empresa"
-                    value={newPartner.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input
-                    id="cnpj"
-                    name="cnpj"
-                    placeholder="XX.XXX.XXX/XXXX-XX"
-                    value={newPartner.cnpj}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="address">Endereço da Matriz</Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    placeholder="Endereço completo"
-                    value={newPartner.address}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="responsibleName">Nome do Responsável</Label>
-                  <Input
-                    id="responsibleName"
-                    name="responsibleName"
-                    placeholder="Nome completo do responsável"
-                    value={newPartner.responsibleName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="responsiblePhone">Telefone do Responsável</Label>
-                  <Input
-                    id="responsiblePhone"
-                    name="responsiblePhone"
-                    placeholder="(DDD) X XXXX-XXXX"
-                    value={newPartner.responsiblePhone}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="responsibleEmail">E-mail do Responsável</Label>
-                  <Input
-                    id="responsibleEmail"
-                    name="responsibleEmail"
-                    type="email"
-                    placeholder="email@exemplo.com"
-                    value={newPartner.responsibleEmail}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-kovi-red hover:bg-kovi-red/90">Salvar</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Parceiros</h1>
+        <p className="text-muted-foreground">
+          Gerenciamento de empresas parceiras
+        </p>
       </div>
 
-      {/* Search bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-sm">
           <Input
-            placeholder="Buscar por nome, CNPJ ou responsável..."
-            className="pl-8"
+            placeholder="Buscar parceiros..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
           />
-        </div>
+          <Button type="submit" variant="secondary">
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
+
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Parceiro
+        </Button>
       </div>
 
-      {/* Partners table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Nome</TableHead>
-              <TableHead>CNPJ</TableHead>
-              <TableHead>Endereço</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="w-[250px]">Nome da Empresa</TableHead>
+              <TableHead className="hidden md:table-cell">CNPJ</TableHead>
+              <TableHead className="hidden md:table-cell">Responsável</TableHead>
+              <TableHead className="hidden lg:table-cell">Email</TableHead>
+              <TableHead className="hidden lg:table-cell">Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPartners.length > 0 ? (
-              filteredPartners.map(partner => (
+            {filteredPartners.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Nenhum parceiro encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredPartners.map((partner) => (
                 <TableRow key={partner.id}>
                   <TableCell className="font-medium">{partner.name}</TableCell>
-                  <TableCell>{partner.cnpj}</TableCell>
-                  <TableCell>{partner.address}</TableCell>
-                  <TableCell>{partner.responsibleName}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>{partner.responsiblePhone}</p>
-                      <p className="text-muted-foreground">{partner.responsibleEmail}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={partner.isActive ? "border-green-500 text-green-700" : "border-red-500 text-red-700"}
-                    >
-                      {partner.isActive ? 'Ativo' : 'Inativo'}
+                  <TableCell className="hidden md:table-cell">{partner.cnpj}</TableCell>
+                  <TableCell className="hidden md:table-cell">{partner.responsibleName}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{partner.responsibleEmail}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <Badge variant={partner.isActive ? "default" : "secondary"}>
+                      {partner.isActive ? "Ativo" : "Inativo"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        Editar
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={partner.isActive ? "text-red-500" : "text-green-500"}
-                      >
-                        {partner.isActive ? 'Desativar' : 'Ativar'}
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleToggleStatus(partner.id)}>
+                          {partner.isActive ? (
+                            <>
+                              <BuildingX className="mr-2 h-4 w-4" />
+                              Desativar Parceiro
+                            </>
+                          ) : (
+                            <>
+                              <Building className="mr-2 h-4 w-4" />
+                              Ativar Parceiro
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-6">
-                  <div className="flex flex-col items-center justify-center text-muted-foreground">
-                    <Building className="h-12 w-12 mb-2" />
-                    <p>Nenhum parceiro encontrado</p>
-                  </div>
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Create Partner Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Parceiro</DialogTitle>
+            <DialogDescription>
+              Preencha os campos abaixo para cadastrar uma nova empresa parceira.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Empresa</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome da empresa" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cnpj"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNPJ</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="00.000.000/0000-00" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endereço Matriz</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Endereço completo" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="responsibleName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Responsável</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome completo do responsável" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="responsiblePhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone do Responsável</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="(00) 00000-0000" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="responsibleEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email do Responsável</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="exemplo@email.com" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Cadastrar Parceiro</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default Partners;
+export default PartnersPage;

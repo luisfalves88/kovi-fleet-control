@@ -15,9 +15,10 @@ import ResetPassword from "@/pages/auth/ResetPassword";
 // Main Pages
 import Dashboard from "@/pages/Dashboard";
 import Tasks from "@/pages/Tasks";
-import TaskDetail from "@/pages/TaskDetail"; // Add import for the task detail page
+import TaskDetail from "@/pages/TaskDetail";
 import Conversations from "@/pages/Conversations";
 import Reports from "@/pages/Reports";
+import Profile from "@/pages/Profile";
 
 // Admin Pages
 import Users from "@/pages/admin/Users";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/tasks/:id" element={<ProtectedLayout><TaskDetail /></ProtectedLayout>} />
             <Route path="/conversations" element={<ProtectedLayout requiredRoles={['admin', 'member', 'partner']}><Conversations /></ProtectedLayout>} />
             <Route path="/reports" element={<ProtectedLayout requiredRoles={['admin', 'member']}><Reports /></ProtectedLayout>} />
+            <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
             
             {/* Admin Routes */}
             <Route path="/users" element={<ProtectedLayout requiredRoles={['admin']}><Users /></ProtectedLayout>} />
