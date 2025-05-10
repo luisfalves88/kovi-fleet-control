@@ -65,7 +65,7 @@ let mockTasks = generateMockTasks();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const TaskService = {
-  getTasks: async (filters?: { status?: TaskStatus | "all"; search?: string; partnerId?: string; }) => {
+  getTasks: async (filters?: { status?: TaskStatus | "all"; search?: string; partnerId?: string; dateFrom?: string; dateTo?: string; slaStatus?: string; }) => {
     await delay(800);
     
     let filteredTasks = [...mockTasks];
@@ -84,6 +84,36 @@ export const TaskService = {
     
     if (filters?.partnerId && filters.partnerId !== "all") {
       filteredTasks = filteredTasks.filter(task => task.partnerId === filters.partnerId);
+    }
+
+    // Add date range filtering
+    if (filters?.dateFrom) {
+      const dateFrom = new Date(filters.dateFrom);
+      filteredTasks = filteredTasks.filter(task => new Date(task.createdAt) >= dateFrom);
+    }
+    
+    if (filters?.dateTo) {
+      const dateTo = new Date(filters.dateTo);
+      dateTo.setHours(23, 59, 59); // End of day
+      filteredTasks = filteredTasks.filter(task => new Date(task.createdAt) <= dateTo);
+    }
+    
+    // Add SLA-based filtering
+    if (filters?.slaStatus) {
+      filteredTasks = filteredTasks.filter(task => {
+        const created = new Date(task.createdAt);
+        const now = new Date();
+        const hoursSinceCreation = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60));
+        
+        if (filters.slaStatus === "urgent" && hoursSinceCreation >= 24) {
+          return true;
+        } else if (filters.slaStatus === "atrisk" && hoursSinceCreation >= 12 && hoursSinceCreation < 24) {
+          return true;
+        } else if (filters.slaStatus === "ontime" && hoursSinceCreation < 12) {
+          return true;
+        }
+        return false;
+      });
     }
     
     return filteredTasks;

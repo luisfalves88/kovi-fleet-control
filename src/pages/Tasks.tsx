@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { TaskService } from "@/services/taskService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Calendar } from "lucide-react";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskStatus } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { getStatusPriority, getSlaStatus } from "@/lib/taskUtils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Tasks = () => {
   const { toast } = useToast();
@@ -22,10 +28,24 @@ const Tasks = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "kanban">("card");
   const [partnerFilter, setPartnerFilter] = useState<string>("all");
+  
+  // Enhanced filtering state
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [slaFilter, setSlaFilter] = useState<string>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<TaskStatus[]>([]);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   const { data: tasks, isLoading, isError, refetch } = useQuery({
-    queryKey: ["tasks", statusFilter, searchQuery],
-    queryFn: () => TaskService.getTasks({ status: statusFilter, search: searchQuery }),
+    queryKey: ["tasks", statusFilter, searchQuery, partnerFilter, dateFrom, dateTo, slaFilter, selectedStatuses],
+    queryFn: () => TaskService.getTasks({
+      status: statusFilter,
+      search: searchQuery,
+      partnerId: partnerFilter,
+      dateFrom: dateFrom ? format(dateFrom, 'yyyy-MM-dd') : undefined,
+      dateTo: dateTo ? format(dateTo, 'yyyy-MM-dd') : undefined,
+      slaStatus: slaFilter !== "all" ? slaFilter : undefined
+    }),
   });
 
   // Get sorted tasks
@@ -33,6 +53,11 @@ const Tasks = () => {
     if (!tasks) return [];
     
     let sortedList = [...tasks];
+    
+    // Apply selected statuses filter if any are selected
+    if (selectedStatuses.length > 0) {
+      sortedList = sortedList.filter(task => selectedStatuses.includes(task.status));
+    }
     
     if (sortBy === "priority") {
       sortedList.sort((a, b) => getStatusPriority(a.status) - getStatusPriority(b.status));
@@ -49,13 +74,8 @@ const Tasks = () => {
       );
     }
     
-    // Apply partner filter if needed
-    if (partnerFilter !== "all") {
-      sortedList = sortedList.filter(task => task.partnerId === partnerFilter);
-    }
-    
     return sortedList;
-  }, [tasks, sortBy, partnerFilter]);
+  }, [tasks, sortBy, selectedStatuses]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +89,23 @@ const Tasks = () => {
       description: "A tarefa foi criada com sucesso.",
     });
     refetch();
+  };
+
+  const toggleStatusSelection = (status: TaskStatus) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status)
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setSlaFilter("all");
+    setSelectedStatuses([]);
+    setPartnerFilter("all");
+    setStatusFilter("all");
   };
 
   // Filter and sort options
@@ -101,6 +138,13 @@ const Tasks = () => {
     { value: "sla", label: "SLA (urgência)" },
   ];
 
+  const slaOptions = [
+    { value: "all", label: "Todos SLAs" },
+    { value: "urgent", label: "Urgente (>24h)" },
+    { value: "atrisk", label: "Em risco (12-24h)" },
+    { value: "ontime", label: "No prazo (<12h)" },
+  ];
+
   return (
     <div className="space-y-6 w-full">
       <div>
@@ -124,31 +168,20 @@ const Tasks = () => {
         </form>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TaskStatus | "all")}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filtrar por status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((status) => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={partnerFilter} onValueChange={setPartnerFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filtrar por parceiro" />
-            </SelectTrigger>
-            <SelectContent>
-              {partnerOptions.map((partner) => (
-                <SelectItem key={partner.value} value={partner.value}>
-                  {partner.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+            className="sm:w-[140px]"
+          >
+            {isFilterExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+            {selectedStatuses.length > 0 || slaFilter !== "all" || dateFrom || dateTo ? (
+              <Badge variant="secondary" className="ml-2">
+                {(selectedStatuses.length > 0 ? 1 : 0) + 
+                 (slaFilter !== "all" ? 1 : 0) + 
+                 (dateFrom || dateTo ? 1 : 0)}
+              </Badge>
+            ) : null}
+          </Button>
           
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as "createdAt" | "priority" | "sla")}>
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -169,6 +202,106 @@ const Tasks = () => {
           </Button>
         </div>
       </div>
+
+      {isFilterExpanded && (
+        <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+          <div className="flex flex-wrap gap-2 justify-between">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Filtro por data</h3>
+              <div className="flex gap-2 flex-wrap">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-[140px]">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, 'dd/MM/yyyy') : 'Data inicial'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-[140px]">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, 'dd/MM/yyyy') : 'Data final'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Filtro por SLA</h3>
+              <Select value={slaFilter} onValueChange={setSlaFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="SLA status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {slaOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Filtro por parceiro</h3>
+              <Select value={partnerFilter} onValueChange={setPartnerFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por parceiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {partnerOptions.map((partner) => (
+                    <SelectItem key={partner.value} value={partner.value}>
+                      {partner.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Status (seleção múltipla)</h3>
+            <div className="flex flex-wrap gap-2">
+              {statusOptions.filter(option => option.value !== "all").map((status) => (
+                <Badge
+                  key={status.value}
+                  variant={selectedStatuses.includes(status.value as TaskStatus) ? "default" : "outline"}
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => toggleStatusSelection(status.value as TaskStatus)}
+                >
+                  {status.label}
+                  {selectedStatuses.includes(status.value as TaskStatus) && " ✓"}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Limpar filtros
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "card" | "kanban")}>
         <TabsList>
