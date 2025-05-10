@@ -83,6 +83,13 @@
 
   body {
     @apply bg-background text-foreground;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
   }
 }
 

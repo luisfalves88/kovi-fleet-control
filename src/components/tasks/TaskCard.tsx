@@ -40,7 +40,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-gray-500" />
-            <span className="text-sm truncate max-w-[250px]" title={task.currentAddress}>
+            <span className="text-sm truncate max-w-full" title={task.currentAddress}>
               {task.currentAddress}
             </span>
           </div>

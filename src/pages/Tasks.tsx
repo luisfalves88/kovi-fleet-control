@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { TaskService } from "@/services/taskService";
@@ -72,6 +71,7 @@ const Tasks = () => {
     refetch();
   };
 
+  // Filter and sort options
   const statusOptions = [
     { value: "all", label: "Todos" },
     { value: "allocateDriver", label: "Alocar chofer" },
@@ -102,7 +102,7 @@ const Tasks = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
         <p className="text-muted-foreground">
@@ -184,7 +184,7 @@ const Tasks = () => {
               Erro ao carregar tarefas. Tente novamente mais tarde.
             </div>
           ) : sortedTasks.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
               {sortedTasks.map((task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
@@ -196,7 +196,7 @@ const Tasks = () => {
           )}
         </TabsContent>
         
-        <TabsContent value="kanban">
+        <TabsContent value="kanban" className="mt-4 w-full">
           {isLoading ? (
             <div className="text-center py-10">Carregando tarefas...</div>
           ) : isError ? (
@@ -204,7 +204,9 @@ const Tasks = () => {
               Erro ao carregar tarefas. Tente novamente mais tarde.
             </div>
           ) : sortedTasks.length > 0 ? (
-            <KanbanBoard tasks={sortedTasks} onTaskUpdate={refetch} />
+            <div className="w-full overflow-x-auto">
+              <KanbanBoard tasks={sortedTasks} onTaskUpdate={refetch} />
+            </div>
           ) : (
             <div className="text-center py-10">
               Nenhuma tarefa encontrada com os filtros atuais.

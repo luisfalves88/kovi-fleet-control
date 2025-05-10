@@ -42,7 +42,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
   }, [tasks]);
 
   return (
-    <div className="overflow-x-auto pb-4">
+    <div className="overflow-x-auto pb-4 w-full">
       <div className="flex gap-4 min-w-max">
         {kanbanColumns.map((column) => (
           <div key={column.id} className="w-80 flex-shrink-0">

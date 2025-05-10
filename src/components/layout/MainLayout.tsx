@@ -58,7 +58,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const menuItems = getMenuItems();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Mobile Toggle Button */}
       {isMobile && (
         <Button 
@@ -127,8 +127,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="container py-6 max-w-7xl">
+      <div className="flex-1 overflow-auto w-full">
+        <div className="container py-6 px-4 md:px-6 max-w-full">
           {children}
         </div>
       </div>
