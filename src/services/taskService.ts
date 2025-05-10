@@ -65,7 +65,7 @@ let mockTasks = generateMockTasks();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const TaskService = {
-  getTasks: async (filters?: { status?: TaskStatus | "all"; search?: string }) => {
+  getTasks: async (filters?: { status?: TaskStatus | "all"; search?: string; partnerId?: string; }) => {
     await delay(800);
     
     let filteredTasks = [...mockTasks];
@@ -80,6 +80,10 @@ export const TaskService = {
         task.plate.toLowerCase().includes(search) || 
         task.customerName.toLowerCase().includes(search)
       );
+    }
+    
+    if (filters?.partnerId && filters.partnerId !== "all") {
+      filteredTasks = filteredTasks.filter(task => task.partnerId === filters.partnerId);
     }
     
     return filteredTasks;
