@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +5,7 @@ import { TaskService } from "@/services/taskService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Car, MapPin, Phone, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Textarea } from '@/components/ui/textarea';
 import { getStatusName, getStatusColor } from '@/lib/taskUtils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 const TaskDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -389,15 +389,8 @@ const TaskDetail = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversas</CardTitle>
-              <CardDescription>Chat da tarefa</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[200px] flex items-center justify-center">
-              <p className="text-sm text-gray-500">Funcionalidade de Chat em desenvolvimento.</p>
-            </CardContent>
-          </Card>
+          {/* Replace the placeholder with the actual ChatPanel */}
+          <ChatPanel taskId={task.id} taskPlate={task.plate} />
         </div>
       </div>
 
