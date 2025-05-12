@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery as useReactQuery } from '@tanstack/react-query';
 import { ChatService } from '@/services/chatService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -17,14 +17,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/types/chat';
 
 // Helper function to get URL parameters
-const useQuery = () => {
+const useUrlParams = () => {
   return new URLSearchParams(useLocation().search);
 };
 
 const Conversations = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryParams = useQuery();
+  const queryParams = useUrlParams();
   const taskIdParam = queryParams.get('taskId');
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,13 +33,13 @@ const Conversations = () => {
   const [mentionedMessages, setMentionedMessages] = useState<ChatMessage[]>([]);
   
   // Fetch conversations
-  const { data: conversations, isLoading: conversationsLoading } = useQuery({
+  const { data: conversations, isLoading: conversationsLoading } = useReactQuery({
     queryKey: ['conversations'],
     queryFn: () => ChatService.getConversations(),
   });
   
   // Fetch unread conversations
-  const { data: unreadConversations, isLoading: unreadLoading } = useQuery({
+  const { data: unreadConversations, isLoading: unreadLoading } = useReactQuery({
     queryKey: ['unread-conversations'],
     queryFn: () => ChatService.getUnreadConversations(),
   });

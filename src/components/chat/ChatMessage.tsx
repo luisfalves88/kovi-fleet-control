@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Heart, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { ChatService } from '@/services/chatService';
+import { ChatService, mockUsers } from '@/services/chatService';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
 
