@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskService } from '@/services/taskService';
 import { Button } from '@/components/ui/button';
-import { Info } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface KanbanBoardProps {
@@ -133,18 +133,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
                                 {...provided.dragHandleProps}
                                 className={`transition-all duration-200 ${snapshot.isDragging ? "opacity-70 scale-105 shadow-lg" : ""}`}
                               >
-                                <div className="relative">
+                                <div className="group relative">
                                   <TaskItem task={task} onUpdate={onTaskUpdate} compact={true} />
                                   <Button 
-                                    variant="outline" 
+                                    variant="secondary" 
                                     size="sm"
-                                    className="absolute top-1 right-1 h-6 w-6 p-0" 
+                                    className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0" 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleViewDetails(task.id);
                                     }}
+                                    title="Ver detalhes"
                                   >
-                                    <Info className="h-3 w-3" />
+                                    <ExternalLink className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </div>
