@@ -1,256 +1,250 @@
 
-import { ChatMessage, Conversation, User } from "@/types";
-
-// Mock conversation data from existing Conversations page
-let mockConversations = [
-  {
-    id: "conv-1",
-    taskId: "task-1",
-    taskPlate: "ABC1234",
-    lastMessage: {
-      id: "msg-1",
-      taskId: "task-1",
-      userId: "1",
-      userName: "Admin Kovi",
-      userRole: "admin",
-      userCompany: "Kovi",
-      text: "Por favor, verifique a situação do veículo.",
-      timestamp: new Date(2024, 4, 7, 14, 35),
-      read: false,
-      likes: [],
-      mentions: []
-    },
-    messages: [
-      {
-        id: "msg-0",
-        taskId: "task-1",
-        userId: "3",
-        userName: "Parceiro Exemplo",
-        userRole: "partner",
-        userCompany: "Empresa Parceira",
-        text: "Bom dia, precisamos de mais informações sobre o cliente.",
-        timestamp: new Date(2024, 4, 7, 10, 15),
-        read: true,
-        likes: [],
-        mentions: []
-      },
-      {
-        id: "msg-1",
-        taskId: "task-1",
-        userId: "1",
-        userName: "Admin Kovi",
-        userRole: "admin",
-        userCompany: "Kovi",
-        text: "Por favor, verifique a situação do veículo.",
-        timestamp: new Date(2024, 4, 7, 14, 35),
-        read: false,
-        likes: [],
-        mentions: []
-      }
-    ]
-  },
-  {
-    id: "conv-2",
-    taskId: "task-2",
-    taskPlate: "DEF5678",
-    lastMessage: {
-      id: "msg-2",
-      taskId: "task-2",
-      userId: "2",
-      userName: "Membro Kovi",
-      userRole: "member",
-      userCompany: "Kovi",
-      text: "Motorista alocado. Favor confirmar.",
-      timestamp: new Date(2024, 4, 7, 9, 20),
-      read: true,
-      likes: [],
-      mentions: []
-    },
-    messages: [
-      {
-        id: "msg-2",
-        taskId: "task-2",
-        userId: "2",
-        userName: "Membro Kovi",
-        userRole: "member",
-        userCompany: "Kovi",
-        text: "Motorista alocado. Favor confirmar.",
-        timestamp: new Date(2024, 4, 7, 9, 20),
-        read: true,
-        likes: [],
-        mentions: []
-      }
-    ]
-  },
-  {
-    id: "conv-3",
-    taskId: "task-3",
-    taskPlate: "GHI9012",
-    lastMessage: {
-      id: "msg-3",
-      taskId: "task-3", 
-      userId: "3",
-      userName: "Parceiro Exemplo",
-      userRole: "partner",
-      userCompany: "Empresa Parceira",
-      text: "Cliente não está atendendo o telefone.",
-      timestamp: new Date(2024, 4, 6, 16, 45),
-      read: false,
-      likes: [],
-      mentions: []
-    },
-    messages: [
-      {
-        id: "msg-3",
-        taskId: "task-3",
-        userId: "3",
-        userName: "Parceiro Exemplo",
-        userRole: "partner",
-        userCompany: "Empresa Parceira",
-        text: "Cliente não está atendendo o telefone.",
-        timestamp: new Date(2024, 4, 6, 16, 45),
-        read: false,
-        likes: [],
-        mentions: []
-      }
-    ]
-  }
-];
+import { ChatMessage, Conversation, MentionUser, UserRole } from '@/types/chat';
 
 // Mock users for mentions
-const mockUsers = [
-  { id: "1", name: "Admin Kovi", role: "admin", company: "Kovi" },
-  { id: "2", name: "Membro Kovi", role: "member", company: "Kovi" },
-  { id: "3", name: "Parceiro Exemplo", role: "partner", company: "Empresa Parceira" },
-  { id: "4", name: "Parceiro B", role: "partner", company: "Empresa B" },
-  { id: "5", name: "Parceiro C", role: "partner", company: "Empresa Parceira" },
-  { id: "6", name: "Motorista Exemplo", role: "driver", company: "Empresa Parceira" },
+export const mockUsers: MentionUser[] = [
+  { id: "u1", name: "Admin Kovi", role: "admin", company: "Kovi" },
+  { id: "u2", name: "João Silva", role: "member", company: "Kovi" },
+  { id: "u3", name: "Maria Costa", role: "member", company: "Kovi" },
+  { id: "u4", name: "Pedro Almeida", role: "partner", company: "Parceiro A" },
+  { id: "u5", name: "Ana Santos", role: "partner", company: "Parceiro A" },
+  { id: "u6", name: "Carlos Ferreira", role: "partner", company: "Parceiro B" },
+  { id: "u7", name: "Roberto Mendes", role: "partner", company: "Parceiro B" },
+  { id: "u8", name: "José Motorista", role: "driver", company: "Kovi" },
+  { id: "u9", name: "Eduardo Motorista", role: "driver", company: "Kovi" },
+  { id: "u10", name: "Marcos Motorista", role: "driver", company: "Kovi" },
 ];
+
+// Generate mock conversations
+const generateMockConversations = (): Conversation[] => {
+  // Create sample messages
+  const messages: ChatMessage[] = [];
+  
+  // For each task, create 1-5 messages
+  for (let i = 1000; i < 1020; i++) {
+    const taskId = `TASK-${i}`;
+    const taskPlate = `ABC${i}`;
+    
+    const messageCount = Math.floor(Math.random() * 5) + 1;
+    
+    for (let j = 0; j < messageCount; j++) {
+      // Select a random user
+      const user = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+      
+      // Create a message
+      const message: ChatMessage = {
+        id: `msg-${i}-${j}`,
+        taskId,
+        taskPlate,
+        userId: user.id,
+        userName: user.name,
+        userRole: user.role,
+        userCompany: user.company,
+        text: [
+          "Olá! Preciso de informações sobre este veículo.",
+          "Por favor, atualize o status desta tarefa.",
+          "Confirmo que o veículo foi recolhido.",
+          "Encontrei problemas para acessar este endereço.",
+          "Cliente não atende ao telefone.",
+          "Veículo não está no endereço informado."
+        ][Math.floor(Math.random() * 6)],
+        timestamp: new Date(Date.now() - Math.floor(Math.random() * 10 * 24 * 60 * 60 * 1000)),
+        read: Math.random() > 0.3,
+        likes: [],
+        mentions: []
+      };
+      
+      // Randomly add mentions
+      if (Math.random() > 0.7) {
+        const mentionUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+        message.mentions = [mentionUser.id];
+      }
+      
+      // Randomly add likes
+      if (Math.random() > 0.7) {
+        const likeUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+        message.likes = [likeUser.id];
+      }
+      
+      messages.push(message);
+    }
+  }
+  
+  // Group messages by taskId to create conversations
+  const conversationMap: Record<string, Conversation> = {};
+  
+  messages.forEach(message => {
+    if (!conversationMap[message.taskId]) {
+      conversationMap[message.taskId] = {
+        id: `conv-${message.taskId}`,
+        taskId: message.taskId,
+        taskPlate: message.taskPlate || "",
+        lastMessage: message,
+        messages: []
+      };
+    }
+    
+    conversationMap[message.taskId].messages.push(message);
+    
+    // Update last message if this one is newer
+    if (new Date(message.timestamp) > new Date(conversationMap[message.taskId].lastMessage.timestamp)) {
+      conversationMap[message.taskId].lastMessage = message;
+    }
+  });
+  
+  // Sort messages by timestamp within each conversation
+  Object.values(conversationMap).forEach(conversation => {
+    conversation.messages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  });
+  
+  return Object.values(conversationMap);
+};
+
+// Create mock conversations
+let mockConversations: Conversation[] = generateMockConversations();
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const ChatService = {
+  // Get all conversations
   getConversations: async () => {
+    await delay(800);
+    return mockConversations;
+  },
+  
+  // Get conversations with unread messages
+  getUnreadConversations: async () => {
     await delay(500);
-    return [...mockConversations];
+    return mockConversations.filter(conv => 
+      conv.messages.some(msg => !msg.read)
+    );
   },
-
+  
+  // Get conversations where the user is mentioned
+  getMentionedConversations: async (userId: string) => {
+    await delay(500);
+    return mockConversations.filter(conv => 
+      conv.messages.some(msg => 
+        msg.mentions?.includes(userId) && !msg.read
+      )
+    );
+  },
+  
+  // Get a specific conversation by taskId
   getConversationByTaskId: async (taskId: string) => {
-    await delay(300);
-    const conversation = mockConversations.find(conv => conv.taskId === taskId);
-    return conversation;
+    await delay(500);
+    return mockConversations.find(conv => conv.taskId === taskId) || null;
   },
-
-  sendMessage: async (message: Omit<ChatMessage, 'id' | 'timestamp' | 'likes'>) => {
+  
+  // Send a new message
+  sendMessage: async (messageData: Omit<ChatMessage, "id" | "timestamp" | "likes">) => {
     await delay(300);
-
+    
     const newMessage: ChatMessage = {
-      ...message,
       id: `msg-${Date.now()}`,
       timestamp: new Date(),
       likes: [],
-      read: false
+      ...messageData
     };
-
-    // Find the conversation for this task
-    let conversation = mockConversations.find(conv => conv.taskId === message.taskId);
-
-    if (conversation) {
-      // Update existing conversation
-      conversation.messages.push(newMessage);
-      conversation.lastMessage = newMessage;
+    
+    // Find the conversation or create a new one
+    const conversationIndex = mockConversations.findIndex(c => c.taskId === newMessage.taskId);
+    
+    if (conversationIndex >= 0) {
+      // Add message to existing conversation
+      mockConversations[conversationIndex].messages.push(newMessage);
+      mockConversations[conversationIndex].lastMessage = newMessage;
     } else {
-      // Create new conversation
-      const taskInfo = message.taskId ? { id: message.taskId, plate: message.taskPlate || "Unknown" } : null;
-      
-      if (!taskInfo) return null;
-      
-      conversation = {
-        id: `conv-${Date.now()}`,
-        taskId: taskInfo.id,
-        taskPlate: taskInfo.plate,
+      // Create a new conversation
+      mockConversations.push({
+        id: `conv-${newMessage.taskId}`,
+        taskId: newMessage.taskId,
+        taskPlate: newMessage.taskPlate || "",
         lastMessage: newMessage,
         messages: [newMessage]
-      };
-      
-      mockConversations.push(conversation);
+      });
     }
-
+    
     return newMessage;
   },
-
-  likeMessage: async (messageId: string, userId: string) => {
-    await delay(200);
-    
-    for (const conversation of mockConversations) {
-      const message = conversation.messages.find(m => m.id === messageId);
-      if (message) {
-        // Toggle like
-        const likeIndex = message.likes.indexOf(userId);
-        if (likeIndex >= 0) {
-          message.likes.splice(likeIndex, 1); // Unlike
-        } else {
-          message.likes.push(userId); // Like
-        }
-        return message;
-      }
-    }
-    
-    return null;
-  },
-
+  
+  // Mark all messages in a conversation as read
   markConversationAsRead: async (taskId: string, userId: string) => {
     await delay(200);
     
-    const conversation = mockConversations.find(conv => conv.taskId === taskId);
-    if (!conversation) return false;
+    const conversationIndex = mockConversations.findIndex(c => c.taskId === taskId);
+    if (conversationIndex < 0) return false;
     
-    conversation.messages.forEach(message => {
-      if (message.userId !== userId) {
-        message.read = true;
-      }
-    });
+    mockConversations[conversationIndex].messages = 
+      mockConversations[conversationIndex].messages.map(msg => ({
+        ...msg,
+        read: true
+      }));
     
     return true;
   },
-
-  getMentionableUsers: async (currentUser: User): Promise<{ id: string, name: string, role: UserRole, company: string }[]> => {
+  
+  // Like or unlike a message
+  toggleLikeMessage: async (messageId: string, userId: string) => {
     await delay(200);
     
-    // Admin and member can mention anyone
-    if (currentUser.role === 'admin' || currentUser.role === 'member') {
+    let found = false;
+    
+    mockConversations = mockConversations.map(conv => {
+      const updatedMessages = conv.messages.map(msg => {
+        if (msg.id === messageId) {
+          found = true;
+          // Toggle like
+          const hasLiked = msg.likes.includes(userId);
+          
+          return {
+            ...msg,
+            likes: hasLiked 
+              ? msg.likes.filter(id => id !== userId) 
+              : [...msg.likes, userId]
+          };
+        }
+        return msg;
+      });
+      
+      return {
+        ...conv,
+        messages: updatedMessages,
+        lastMessage: updatedMessages.slice(-1)[0] || conv.lastMessage
+      };
+    });
+    
+    return found;
+  },
+  
+  // Get available users for mentions based on the current user's role and company
+  getMentionableUsers: async (currentUser: { id: string, role: UserRole, company: string }) => {
+    await delay(300);
+    
+    // Admin and Kovi members can mention anyone
+    if (currentUser.role === "admin" || (currentUser.role === "member" && currentUser.company === "Kovi")) {
       return mockUsers;
     }
     
-    // Partners can only mention Kovi staff and partners from same company
-    if (currentUser.role === 'partner') {
+    // Partners can only mention admins, Kovi members, and partners from same company
+    if (currentUser.role === "partner") {
       return mockUsers.filter(user => 
-        user.role === 'admin' || 
-        user.role === 'member' || 
-        (user.role === 'partner' && user.company === currentUser.company)
+        user.role === "admin" || 
+        (user.role === "member" && user.company === "Kovi") ||
+        (user.role === "partner" && user.company === currentUser.company)
       );
     }
     
-    // Default case - can only mention Kovi staff
-    return mockUsers.filter(user => user.role === 'admin' || user.role === 'member');
-  },
-
-  getMentions: async (userId: string) => {
-    await delay(300);
-    
-    const mentions: ChatMessage[] = [];
-    
-    for (const conversation of mockConversations) {
-      for (const message of conversation.messages) {
-        if (message.mentions?.includes(userId) && !message.read) {
-          mentions.push({
-            ...message,
-            taskPlate: conversation.taskPlate
-          });
-        }
-      }
+    // Drivers can mention admins and Kovi members
+    if (currentUser.role === "driver") {
+      return mockUsers.filter(user => 
+        user.role === "admin" || 
+        (user.role === "member" && user.company === "Kovi")
+      );
     }
     
-    return mentions;
+    return [];
   }
 };

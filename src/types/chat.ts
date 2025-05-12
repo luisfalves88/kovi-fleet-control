@@ -1,5 +1,8 @@
 
-import { User, UserRole } from './index';
+import { User } from './index';
+
+// Define UserRole here to avoid import cycle issues
+export type UserRole = 'admin' | 'member' | 'partner' | 'driver';
 
 export interface ChatMessage {
   id: string;

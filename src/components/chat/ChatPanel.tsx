@@ -27,7 +27,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
     setIsLoading(true);
     try {
       const data = await ChatService.getConversationByTaskId(taskId);
-      setConversation(data || null);
+      setConversation(data);
       
       // Mark as read if we have a conversation and logged in user
       if (data && user) {
@@ -65,7 +65,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         text,
         attachment,
         mentions,
-        read: true
+        read: false
       });
       
       // Refresh conversation

@@ -1,169 +1,158 @@
 
 import React, { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ChatMessage as ChatMessageType } from '@/types/chat';
+import { Heart, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Heart, AtSign } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { ChatService } from '@/services/chatService';
-import { User } from '@/types';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChatMessage as ChatMessageType } from '@/types/chat';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ChatMessageProps {
   message: ChatMessageType;
-  showUserInfo?: boolean;
   highlightMentions?: boolean;
-  onMentionClick?: (userId: string) => void;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({
-  message,
-  showUserInfo = true,
-  highlightMentions = false,
-  onMentionClick
+export const ChatMessage: React.FC<ChatMessageProps> = ({ 
+  message, 
+  highlightMentions = false 
 }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLiked, setIsLiked] = useState(message.likes.includes(user?.id || ''));
   const [likeCount, setLikeCount] = useState(message.likes.length);
-  const [isLiked, setIsLiked] = useState(user ? message.likes.includes(user.id) : false);
-  
-  const isCurrentUser = user?.id === message.userId;
-  
-  // Format message text to highlight @ mentions
-  const formatMessageWithMentions = (text: string) => {
-    if (!highlightMentions) return text;
-    
-    // Simple regex to find @username patterns
-    const parts = text.split(/(@\w+)/g);
-    
-    return parts.map((part, index) => {
-      // Check if this part starts with @ (it's a mention)
-      if (part.startsWith('@')) {
-        const mentionName = part.substring(1);
-        // Handle mention click if onMentionClick is provided
-        return (
-          <span 
-            key={index}
-            className="text-primary font-medium cursor-pointer hover:underline"
-            onClick={() => {
-              const mentionedUser = message.mentions?.find(id => {
-                // This is a simplification, in a real app you'd have a more robust way to match usernames to IDs
-                // For now we'll just assume the mention text matches part of the user name
-                const mockUser = user ? mockUsers.find(u => u.id === id) : null;
-                return mockUser && mockUser.name.includes(mentionName);
-              });
-              
-              if (mentionedUser && onMentionClick) {
-                onMentionClick(mentionedUser);
-              }
-            }}
-          >
-            {part}
-          </span>
-        );
-      }
-      
-      // Regular text
-      return <span key={index}>{part}</span>;
-    });
-  };
   
   const handleLike = async () => {
     if (!user) return;
     
-    // Optimistically update UI
-    if (isLiked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
+    try {
+      await ChatService.toggleLikeMessage(message.id, user.id);
+      
+      if (isLiked) {
+        setLikeCount(prev => Math.max(0, prev - 1));
+      } else {
+        setLikeCount(prev => prev + 1);
+        if (message.userId !== user.id) {
+          toast({
+            description: `Você curtiu a mensagem de ${message.userName}`,
+          });
+        }
+      }
+      
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error('Error liking message:', error);
     }
-    setIsLiked(!isLiked);
-    
-    // Call API to update like
-    await ChatService.likeMessage(message.id, user.id);
   };
   
+  // Highlight mentioned users if needed
+  const renderMessageText = () => {
+    if (!highlightMentions || !message.mentions?.length) {
+      return message.text;
+    }
+    
+    // Simple version - just highlight that there are mentions
+    const mentionedUsers = message.mentions.map(userId => {
+      const mentionedUser = mockUsers.find(u => u.id === userId);
+      return mentionedUser ? `@${mentionedUser.name}` : `@usuário`;
+    }).join(', ');
+    
+    if (message.text.includes('@')) {
+      return <span>
+        {message.text.split('@').map((part, i) => {
+          if (i === 0) return part;
+          
+          const restParts = part.split(' ');
+          const mention = restParts.shift();
+          const rest = restParts.join(' ');
+          
+          return (
+            <React.Fragment key={i}>
+              <span className="text-blue-600 font-medium">@{mention}</span>
+              {' ' + rest}
+            </React.Fragment>
+          );
+        })}
+      </span>;
+    }
+    
+    return message.text;
+  };
+  
+  const isMentioned = user && message.mentions?.includes(user.id);
+  const isCurrentUser = user && message.userId === user.id;
+  
   return (
-    <div
-      className={cn(
-        "flex mb-4",
-        isCurrentUser ? "justify-end" : "justify-start"
+    <div className={`flex gap-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+      {!isCurrentUser && (
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-primary/10 text-xs">
+            {message.userName.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
       )}
-    >
-      <div className={cn(
-        "flex gap-2 max-w-[80%]",
-        isCurrentUser ? "flex-row-reverse" : ""
-      )}>
-        {(!isCurrentUser || !showUserInfo) && (
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{message.userName.charAt(0)}</AvatarFallback>
-          </Avatar>
+      
+      <div className={`flex flex-col max-w-[75%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+        {!isCurrentUser && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{message.userName}</span>
+            <span className="text-xs text-muted-foreground">{message.userRole}</span>
+          </div>
         )}
         
-        <div>
-          {(!isCurrentUser && showUserInfo) && (
-            <div className="text-xs font-medium">{message.userName}</div>
-          )}
-          
-          <div className={cn(
-            "p-3 rounded-lg break-words",
-            isCurrentUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted"
-          )}>
-            {message.attachment && (
-              <div className="mb-2">
-                <img 
-                  src={message.attachment} 
-                  alt="Attachment" 
-                  className="max-w-full rounded-md" 
-                />
-              </div>
-            )}
-            
-            <div>{formatMessageWithMentions(message.text)}</div>
+        <div 
+          className={`px-3 py-2 rounded-lg ${
+            isCurrentUser 
+              ? 'bg-primary text-primary-foreground' 
+              : isMentioned
+                ? 'bg-amber-100 border border-amber-200'
+                : 'bg-muted'
+          }`}
+        >
+          <div className="text-sm">
+            {renderMessageText()}
           </div>
           
-          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-            <span>{format(new Date(message.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+          {message.attachment && (
+            <div className="mt-2">
+              <img 
+                src={message.attachment} 
+                alt="Attachment" 
+                className="max-w-full rounded-md" 
+                style={{ maxHeight: '200px' }}
+              />
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center mt-1 gap-2">
+            <span className="text-xs opacity-70">
+              {format(new Date(message.timestamp), 'HH:mm')}
+            </span>
             
-            <div className="flex gap-1 items-center">
-              {likeCount > 0 && (
-                <span className="text-xs">{likeCount}</span>
+            <div className="flex items-center gap-2">
+              {message.read && (
+                <Check size={12} className="opacity-70" />
               )}
               
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-4 w-4 p-0" 
-                      onClick={handleLike}
-                    >
-                      <Heart 
-                        className={cn(
-                          "h-3 w-3", 
-                          isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                        )} 
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isLiked ? 'Remover curtida' : 'Curtir mensagem'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {likeCount > 0 && (
+                <span className="text-xs opacity-70">{likeCount}</span>
+              )}
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5"
+                onClick={handleLike}
+              >
+                <Heart 
+                  size={12}
+                  className={isLiked ? 'fill-red-500 text-red-500' : 'opacity-70'}
+                />
+              </Button>
             </div>
           </div>
         </div>
-        
-        {(isCurrentUser && showUserInfo) && (
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-        )}
       </div>
     </div>
   );

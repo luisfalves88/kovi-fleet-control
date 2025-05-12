@@ -19,8 +19,15 @@ const kanbanColumns: { id: TaskStatus; title: string }[] = [
   { id: "allocateDriver", title: "Alocar chofer" },
   { id: "pendingCollection", title: "Pendente de recolha" },
   { id: "onRouteCollection", title: "Em rota recolha" },
+  { id: "unlock", title: "Desbloqueio" },
+  { id: "onRouteKovi", title: "Em rota Kovi" },
+  { id: "towRequest", title: "Solicitação de guincho" },
+  { id: "onRouteTow", title: "Em rota guincho" },
+  { id: "underAnalysis", title: "Em análise" },
+  { id: "unlawfulAppropriation", title: "Apropriação Indébita" },
   { id: "returned", title: "Devolvida" },
-  { id: "collected", title: "Recolhido" }
+  { id: "collected", title: "Recolhido" },
+  { id: "canceled", title: "Cancelado" }
 ];
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate }) => {
@@ -85,27 +92,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
   return (
     <div className="overflow-x-auto pb-4 w-full">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 min-w-max">
+        <div className="flex gap-2 min-w-max">
           {kanbanColumns.map((column) => (
-            <div key={column.id} className="w-80 flex-shrink-0">
+            <div key={column.id} className="w-64 flex-shrink-0">
               <Card className="h-full">
-                <CardHeader className="pb-2 pt-4">
+                <CardHeader className="pb-2 pt-3">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-xs font-medium truncate">
                       {column.title}
                     </CardTitle>
                     <Badge
-                      className={`${getStatusColor(column.id)} px-2 py-1`}
+                      className={`${getStatusColor(column.id)} px-1.5 py-0.5 text-xs`}
                     >
                       {tasksByStatus[column.id]?.length || 0}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="overflow-y-auto max-h-[calc(100vh-250px)]">
+                <CardContent className="overflow-y-auto max-h-[calc(100vh-250px)] p-2">
                   <Droppable droppableId={column.id}>
                     {(provided) => (
                       <div 
-                        className="space-y-3"
+                        className="space-y-2"
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                       >
@@ -118,15 +125,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
                                 {...provided.dragHandleProps}
                                 className={`transition-all duration-200 ${snapshot.isDragging ? "opacity-70 scale-105 shadow-lg" : ""}`}
                               >
-                                <TaskItem task={task} onUpdate={onTaskUpdate} />
+                                <TaskItem task={task} onUpdate={onTaskUpdate} compact={true} />
                               </div>
                             )}
                           </Draggable>
                         ))}
                         {provided.placeholder}
                         {tasksByStatus[column.id]?.length === 0 && (
-                          <div className="text-center p-4 text-sm text-muted-foreground">
-                            Sem tarefas neste status
+                          <div className="text-center p-3 text-xs text-muted-foreground">
+                            Sem tarefas
                           </div>
                         )}
                       </div>
