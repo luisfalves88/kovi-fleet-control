@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery as useReactQuery } from '@tanstack/react-query';
 import { ChatService } from '@/services/chatService';
@@ -107,17 +108,17 @@ const Conversations = () => {
   };
   
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col">
-      <div>
+    <div className="h-full flex flex-col">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold tracking-tight">Conversas</h1>
         <p className="text-muted-foreground">
           Conversas das tarefas em andamento
         </p>
       </div>
       
-      <div className="flex gap-4 h-full mt-6 overflow-hidden">
+      <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Left panel: Conversation list */}
-        <Card className="w-80 flex-shrink-0 h-full flex flex-col">
+        <Card className="w-80 flex-shrink-0 flex flex-col">
           <CardHeader className="p-4 pb-2">
             <form onSubmit={handleSearch} className="flex gap-2">
               <Input
@@ -156,7 +157,7 @@ const Conversations = () => {
             </div>
             
             <TabsContent value="all" className="flex-1 overflow-hidden mt-0">
-              <ScrollArea className="h-[calc(100vh-248px)]">
+              <ScrollArea className="h-[calc(100vh-195px)]">
                 <div className="px-4 space-y-2 pt-2">
                   {conversationsLoading ? (
                     <div className="text-center py-6">
@@ -204,7 +205,7 @@ const Conversations = () => {
             </TabsContent>
             
             <TabsContent value="mentions" className="flex-1 overflow-hidden mt-0">
-              <ScrollArea className="h-[calc(100vh-248px)]">
+              <ScrollArea className="h-[calc(100vh-195px)]">
                 <div className="px-4 space-y-2 pt-2">
                   {mentionedMessages.length > 0 ? (
                     mentionedMessages.map(msg => (
@@ -244,20 +245,18 @@ const Conversations = () => {
         </Card>
         
         {/* Right panel: Selected conversation */}
-        <div className="flex-1 h-full flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedTaskId ? (
             <ChatPanel 
               taskId={selectedTaskId} 
               fullScreen={true} 
             />
           ) : (
-            <Card className="flex-1 h-full">
-              <CardContent className="flex h-full items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                  <p>Selecione uma conversa para visualizar.</p>
-                </div>
-              </CardContent>
+            <Card className="flex-1 flex flex-col justify-center items-center">
+              <div className="text-center text-muted-foreground p-4">
+                <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-30" />
+                <p>Selecione uma conversa para visualizar.</p>
+              </div>
             </Card>
           )}
         </div>

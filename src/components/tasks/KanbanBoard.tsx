@@ -8,6 +8,9 @@ import { TaskItem } from './TaskItem';
 import { useToast } from '@/hooks/use-toast';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskService } from '@/services/taskService';
+import { Button } from '@/components/ui/button';
+import { Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -32,6 +35,7 @@ const kanbanColumns: { id: TaskStatus; title: string }[] = [
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Group tasks by status
   const tasksByStatus = useMemo(() => {
@@ -89,12 +93,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
     }
   };
 
+  const handleViewDetails = (taskId: string) => {
+    navigate(`/tasks/${taskId}`);
+  };
+
   return (
     <div className="overflow-x-auto pb-4 w-full">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-2 min-w-max">
           {kanbanColumns.map((column) => (
-            <div key={column.id} className="w-64 flex-shrink-0">
+            <div key={column.id} className="w-56 flex-shrink-0">
               <Card className="h-full">
                 <CardHeader className="pb-2 pt-3">
                   <div className="flex justify-between items-center">
@@ -125,7 +133,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
                                 {...provided.dragHandleProps}
                                 className={`transition-all duration-200 ${snapshot.isDragging ? "opacity-70 scale-105 shadow-lg" : ""}`}
                               >
-                                <TaskItem task={task} onUpdate={onTaskUpdate} compact={true} />
+                                <div className="relative">
+                                  <TaskItem task={task} onUpdate={onTaskUpdate} compact={true} />
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="absolute top-1 right-1 h-6 w-6 p-0" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewDetails(task.id);
+                                    }}
+                                  >
+                                    <Info className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             )}
                           </Draggable>

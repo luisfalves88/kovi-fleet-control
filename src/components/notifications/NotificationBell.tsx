@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import {
   Popover,
@@ -12,6 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 type NotificationType = 
   | 'new_task'
@@ -20,7 +22,9 @@ type NotificationType =
   | 'unlock_request'
   | 'returned_task'
   | 'analysis_task'
-  | 'tow_request';
+  | 'tow_request'
+  | 'task_assigned'
+  | 'task_reassigned';
 
 interface Notification {
   id: string;
@@ -84,6 +88,54 @@ const mockNotifications: Notification[] = [
     read: true,
     taskId: 'task-5',
     taskPlate: 'MNO7890'
+  },
+  {
+    id: 'notif-6',
+    type: 'returned_task',
+    title: 'Tarefa devolvida',
+    description: 'A tarefa para o veículo PQR1234 foi devolvida',
+    timestamp: new Date(2024, 4, 3, 14, 15),
+    read: false,
+    taskId: 'task-6',
+    taskPlate: 'PQR1234'
+  },
+  {
+    id: 'notif-7',
+    type: 'analysis_task',
+    title: 'Tarefa em análise',
+    description: 'A tarefa para o veículo STU5678 entrou em fase de análise',
+    timestamp: new Date(2024, 4, 2, 9, 45),
+    read: false,
+    taskId: 'task-7',
+    taskPlate: 'STU5678'
+  },
+  {
+    id: 'notif-8',
+    type: 'task_assigned',
+    title: 'Tarefa alocada',
+    description: 'Uma nova tarefa para o veículo VWX9012 foi alocada para você',
+    timestamp: new Date(2024, 4, 1, 11, 20),
+    read: false,
+    taskId: 'task-8',
+    taskPlate: 'VWX9012'
+  },
+  {
+    id: 'notif-9',
+    type: 'task_reassigned',
+    title: 'Tarefa realocada',
+    description: 'A tarefa para o veículo YZA3456 foi realocada para outro chofer',
+    timestamp: new Date(2024, 3, 30, 16, 45),
+    read: true,
+    taskId: 'task-9',
+    taskPlate: 'YZA3456'
+  },
+  {
+    id: 'notif-10',
+    type: 'new_task',
+    title: 'Novas tarefas recebidas',
+    description: 'Você recebeu 5 novas solicitações de recolha',
+    timestamp: new Date(2024, 3, 29, 10, 15),
+    read: true
   }
 ];
 
@@ -91,6 +143,8 @@ export const NotificationBell = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Get unread notifications count
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -106,11 +160,28 @@ export const NotificationBell = () => {
       case 'partner':
         return ['new_task', 'task_canceled', 'task_completed'].includes(notification.type);
       case 'driver':
-        return ['new_task', 'task_canceled', 'task_completed'].includes(notification.type);
+        return ['task_assigned', 'task_reassigned', 'task_canceled', 'task_completed'].includes(notification.type);
       default:
         return false;
     }
   });
+  
+  useEffect(() => {
+    // Show toast for new notifications on component mount
+    const newNotifications = notifications.filter(n => !n.read).slice(0, 3);
+    
+    if (newNotifications.length > 0) {
+      setTimeout(() => {
+        newNotifications.forEach(notification => {
+          toast({
+            title: notification.title,
+            description: notification.description,
+            duration: 5000,
+          });
+        });
+      }, 2000);
+    }
+  }, []);
 
   // Mark all notifications as read
   const handleMarkAllAsRead = () => {
@@ -122,15 +193,24 @@ export const NotificationBell = () => {
     );
   };
 
-  // Mark a specific notification as read
-  const handleMarkAsRead = (notificationId: string) => {
+  // Mark a specific notification as read and handle click
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark the notification as read
     setNotifications(prevNotifications =>
-      prevNotifications.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, read: true }
-          : notification
+      prevNotifications.map(n =>
+        n.id === notification.id
+          ? { ...n, read: true }
+          : n
       )
     );
+    
+    // Close the popover
+    setOpen(false);
+    
+    // Navigate to the task if taskId is available
+    if (notification.taskId) {
+      navigate(`/tasks/${notification.taskId}`);
+    }
   };
 
   return (
@@ -163,7 +243,7 @@ export const NotificationBell = () => {
                 className={`p-3 border-b cursor-pointer hover:bg-muted/20 ${
                   !notification.read ? 'bg-muted/10' : ''
                 }`}
-                onClick={() => handleMarkAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex justify-between">
                   <h4 className={`${!notification.read ? 'font-medium' : ''}`}>
