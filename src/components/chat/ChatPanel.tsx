@@ -86,8 +86,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
   };
   
   return (
-    <Card className={fullScreen ? "h-full" : "h-[500px]"}>
-      <CardHeader className="pb-2">
+    <Card className={`${fullScreen ? "h-full" : "h-[500px]"} flex flex-col overflow-hidden`}>
+      <CardHeader className="pb-2 border-b">
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -107,8 +107,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         </div>
       </CardHeader>
       
-      <div className="flex flex-col h-full">
-        <CardContent className="flex-1 overflow-y-auto p-4">
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <CardContent className="flex-1 overflow-y-auto p-4 pt-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <span>Carregando mensagens...</span>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery as useReactQuery } from '@tanstack/react-query';
 import { ChatService } from '@/services/chatService';
@@ -245,21 +244,23 @@ const Conversations = () => {
         </Card>
         
         {/* Right panel: Selected conversation */}
-        <Card className="flex-1 h-full">
+        <div className="flex-1 h-full flex flex-col">
           {selectedTaskId ? (
             <ChatPanel 
               taskId={selectedTaskId} 
               fullScreen={true} 
             />
           ) : (
-            <CardContent className="flex h-full items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-30" />
-                <p>Selecione uma conversa para visualizar.</p>
-              </div>
-            </CardContent>
+            <Card className="flex-1 h-full">
+              <CardContent className="flex h-full items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-30" />
+                  <p>Selecione uma conversa para visualizar.</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
