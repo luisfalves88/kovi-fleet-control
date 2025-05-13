@@ -5,6 +5,10 @@ import Users from './Users';
 import Partners from './Partners';
 import Units from './Units';
 
+interface TabContentProps {
+  isTab?: boolean;
+}
+
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("users");
 
