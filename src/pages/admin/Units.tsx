@@ -82,7 +82,7 @@ const formSchema = z.object({
   }),
 });
 
-const UnitsPage = () => {
+export const Units = ({ isTab = false }: { isTab?: boolean }) => {
   const { toast } = useToast();
   const [units, setUnits] = useState<Unit[]>(mockUnits);
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,15 +147,17 @@ const UnitsPage = () => {
     : units;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Unidades</h1>
-        <p className="text-muted-foreground">
-          Gerenciamento de unidades de entrega de veículos
-        </p>
-      </div>
+    <div className={isTab ? "" : "space-y-6"}>
+      {!isTab && (
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Unidades</h1>
+          <p className="text-muted-foreground">
+            Gerenciamento de unidades de entrega de veículos
+          </p>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between mb-4">
         <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-sm">
           <Input
             placeholder="Buscar unidades..."
@@ -288,4 +290,4 @@ const UnitsPage = () => {
   );
 };
 
-export default UnitsPage;
+export default Units;

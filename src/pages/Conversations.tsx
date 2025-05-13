@@ -8,13 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChatPanel } from '@/components/chat/ChatPanel';
-import { Search, MessageSquare, AtSign } from 'lucide-react';
+import { Search, MessageSquare, AtSign, Pin, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChatMessage } from '@/types/chat';
+import { ChatMessage, Conversation } from '@/types/chat';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Helper function to get URL parameters
 const useUrlParams = () => {
@@ -31,6 +37,9 @@ const Conversations = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(taskIdParam);
   const [selectedTab, setSelectedTab] = useState<string>(taskIdParam ? "all" : "all");
   const [mentionedMessages, setMentionedMessages] = useState<ChatMessage[]>([]);
+  const [readFilter, setReadFilter] = useState<"all" | "read" | "unread">("all");
+  const [pinnedFilter, setPinnedFilter] = useState(false);
+  const [pinnedConversations, setPinnedConversations] = useState<string[]>([]);
   
   // Fetch conversations
   const { data: conversations, isLoading: conversationsLoading } = useReactQuery({
@@ -85,26 +94,147 @@ const Conversations = () => {
     // Filter functionality would happen here
   };
   
-  // Filter conversations based on search query
-  const filteredConversations = conversations?.filter(conv => {
-    if (!searchQuery) return true;
+  // Toggle pinned status of a conversation
+  const togglePinConversation = (taskId: string) => {
+    setPinnedConversations(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
+  };
+  
+  // Mark conversation as read
+  const markAsRead = (taskId: string) => {
+    if (user) {
+      ChatService.markConversationAsRead(taskId, user.id);
+    }
+  };
+  
+  // Sort and filter conversations
+  const getSortedAndFilteredConversations = () => {
+    if (!conversations) return [];
     
-    const query = searchQuery.toLowerCase();
-    return (
-      conv.taskPlate.toLowerCase().includes(query) || 
-      conv.messages.some(msg => 
-        msg.text.toLowerCase().includes(query) || 
-        msg.userName.toLowerCase().includes(query)
-      )
-    );
-  });
+    // First apply text search filter
+    let filtered = conversations;
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(conv => {
+        return (
+          conv.taskPlate.toLowerCase().includes(query) || 
+          conv.messages.some(msg => 
+            msg.text.toLowerCase().includes(query) || 
+            msg.userName.toLowerCase().includes(query)
+          )
+        );
+      });
+    }
+    
+    // Then apply read/unread filter
+    if (readFilter === "read") {
+      filtered = filtered.filter(conv => conv.lastMessage.read);
+    } else if (readFilter === "unread") {
+      filtered = filtered.filter(conv => !conv.lastMessage.read);
+    }
+    
+    // Then apply pinned filter
+    if (pinnedFilter) {
+      filtered = filtered.filter(conv => pinnedConversations.includes(conv.taskId));
+    }
+    
+    // Sort by most recent message
+    return filtered.sort((a, b) => {
+      // Sort pinned conversations first if not filtering by pinned only
+      if (!pinnedFilter) {
+        const aPinned = pinnedConversations.includes(a.taskId);
+        const bPinned = pinnedConversations.includes(b.taskId);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+      }
+      
+      // Then sort by timestamp (most recent first)
+      return new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime();
+    });
+  };
   
   // Get the right list of conversations based on selected tab
   const getDisplayedConversations = () => {
     if (selectedTab === "unread" && unreadConversations) {
       return unreadConversations;
     }
-    return filteredConversations || [];
+    return getSortedAndFilteredConversations();
+  };
+  
+  // Render conversation card
+  const renderConversationCard = (conv: Conversation) => {
+    const isPinned = pinnedConversations.includes(conv.taskId);
+    const isUnread = !conv.lastMessage.read;
+    const task = conv.task || { status: "unknown", partnerName: "Desconhecido" };
+    
+    return (
+      <Card 
+        key={conv.id}
+        className={`cursor-pointer hover:bg-accent transition-colors ${
+          selectedTaskId === conv.taskId ? "border-primary" : ""
+        } ${isUnread ? "bg-muted/30" : ""}`}
+        onClick={() => {
+          setSelectedTaskId(conv.taskId);
+          // Mark as read when clicked
+          if (isUnread) {
+            markAsRead(conv.taskId);
+          }
+        }}
+      >
+        <CardContent className="p-3 relative">
+          <div className="flex justify-between items-center mb-1">
+            <div className="font-medium flex items-center gap-1">
+              {isPinned && <Pin className="h-3 w-3 text-blue-500" />}
+              <span>{conv.taskPlate}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {format(new Date(conv.lastMessage.timestamp), 'dd/MM HH:mm')}
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-1 mb-1">
+            <div className="flex flex-wrap gap-1 text-xs">
+              <Badge variant="outline" className="px-1 py-0 h-5">
+                {task.status}
+              </Badge>
+              <Badge variant="secondary" className="px-1 py-0 h-5">
+                {task.partnerName}
+              </Badge>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-muted-foreground truncate">
+              <span className="font-medium">{conv.lastMessage.userName}: </span>
+              {conv.lastMessage.text}
+            </div>
+            
+            {isUnread && (
+              <Badge className="ml-2">Novo</Badge>
+            )}
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute right-1 top-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePinConversation(conv.taskId);
+            }}
+            title={isPinned ? "Desafixar conversa" : "Fixar conversa"}
+          >
+            <Pin className={`h-3 w-3 ${isPinned ? 'fill-blue-500' : ''}`} />
+          </Button>
+        </CardContent>
+      </Card>
+    );
   };
   
   return (
@@ -120,17 +250,53 @@ const Conversations = () => {
         {/* Left panel: Conversation list */}
         <Card className="w-80 flex-shrink-0 flex flex-col">
           <CardHeader className="p-4 pb-2">
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <Input
-                placeholder="Buscar conversa..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-              <Button type="submit" variant="secondary" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
+            <div className="flex gap-2 mb-2">
+              <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+                <Input
+                  placeholder="Buscar conversa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+                <Button type="submit" variant="secondary" size="icon">
+                  <Search className="h-4 w-4" />
+                </Button>
+              </form>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" title="Filtros">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuCheckboxItem
+                    checked={readFilter === "all"}
+                    onCheckedChange={() => setReadFilter("all")}
+                  >
+                    Todas
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={readFilter === "read"}
+                    onCheckedChange={() => setReadFilter("read")}
+                  >
+                    Lidas
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={readFilter === "unread"}
+                    onCheckedChange={() => setReadFilter("unread")}
+                  >
+                    Não lidas
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={pinnedFilter}
+                    onCheckedChange={() => setPinnedFilter(!pinnedFilter)}
+                  >
+                    Fixadas
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           
           <Tabs 
@@ -156,43 +322,15 @@ const Conversations = () => {
               </TabsList>
             </div>
             
-            <TabsContent value="all" className="flex-1 overflow-hidden mt-0">
-              <ScrollArea className="h-[calc(100vh-195px)]">
-                <div className="px-4 space-y-2 pt-2">
+            <TabsContent value="all" className="flex-1 overflow-hidden mt-0 px-4">
+              <ScrollArea className="h-[calc(100vh-205px)] pr-2">
+                <div className="space-y-2 pt-2">
                   {conversationsLoading ? (
                     <div className="text-center py-6">
                       Carregando conversas...
                     </div>
                   ) : getDisplayedConversations().length > 0 ? (
-                    getDisplayedConversations().map(conv => (
-                      <Card 
-                        key={conv.id}
-                        className={`cursor-pointer hover:bg-accent transition-colors ${
-                          selectedTaskId === conv.taskId ? "border-primary" : ""
-                        }`}
-                        onClick={() => setSelectedTaskId(conv.taskId)}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex justify-between items-center mb-1">
-                            <div className="font-medium">{conv.taskPlate}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {format(new Date(conv.lastMessage.timestamp), 'dd/MM HH:mm')}
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm text-muted-foreground truncate">
-                              <span className="font-medium">{conv.lastMessage.userName}: </span>
-                              {conv.lastMessage.text}
-                            </div>
-                            
-                            {!conv.lastMessage.read && (
-                              <Badge className="ml-2">Novo</Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                    getDisplayedConversations().map(conv => renderConversationCard(conv))
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       {searchQuery 
@@ -204,9 +342,9 @@ const Conversations = () => {
               </ScrollArea>
             </TabsContent>
             
-            <TabsContent value="mentions" className="flex-1 overflow-hidden mt-0">
-              <ScrollArea className="h-[calc(100vh-195px)]">
-                <div className="px-4 space-y-2 pt-2">
+            <TabsContent value="mentions" className="flex-1 overflow-hidden mt-0 px-4">
+              <ScrollArea className="h-[calc(100vh-205px)] pr-2">
+                <div className="space-y-2 pt-2">
                   {mentionedMessages.length > 0 ? (
                     mentionedMessages.map(msg => (
                       <Card 

@@ -136,9 +136,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskUpdate })
                                 <div className="group relative">
                                   <TaskItem task={task} onUpdate={onTaskUpdate} compact={true} />
                                   <Button 
-                                    variant="secondary" 
+                                    variant="outline" 
                                     size="sm"
-                                    className="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0" 
+                                    className="absolute top-0 right-0 h-6 w-6 p-0 m-1 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity border shadow-sm" 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleViewDetails(task.id);

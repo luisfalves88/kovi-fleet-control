@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Conversation } from '@/types/chat';
+import { Badge } from '@/components/ui/badge';
+import { TaskService } from '@/services/taskService';
+import { getStatusName, getStatusColor } from '@/lib/taskUtils';
 
 interface ChatPanelProps {
   taskId: string;
@@ -21,6 +24,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
   const navigate = useNavigate();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [taskDetails, setTaskDetails] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const fetchConversation = async () => {
@@ -32,6 +36,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
       // Mark as read if we have a conversation and logged in user
       if (data && user) {
         ChatService.markConversationAsRead(taskId, user.id);
+      }
+      
+      // Fetch task details
+      try {
+        const task = await TaskService.getTaskById(taskId);
+        setTaskDetails(task);
+      } catch (err) {
+        console.error("Error fetching task details:", err);
       }
     } catch (error) {
       console.error("Error fetching chat conversation:", error);
@@ -57,7 +69,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
     try {
       await ChatService.sendMessage({
         taskId,
-        taskPlate,
+        taskPlate: taskPlate || taskDetails?.plate,
         userId: user.id,
         userName: user.name,
         userRole: user.role,
@@ -86,13 +98,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
   };
   
   return (
-    <Card className={`${fullScreen ? "h-full" : "h-[500px]"} flex flex-col overflow-hidden`}>
+    <Card className={`${fullScreen ? "h-full" : "h-[500px]"} flex flex-col overflow-hidden border`}>
       <CardHeader className="pb-2 pt-4 border-b flex-shrink-0">
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="flex items-center gap-2">
               <span>Chat</span>
-              {taskPlate && <span className="text-sm">({taskPlate})</span>}
+              {(taskPlate || taskDetails?.plate) && (
+                <span className="text-sm">({taskPlate || taskDetails?.plate})</span>
+              )}
+              
+              {taskDetails && (
+                <div className="flex ml-2 gap-2">
+                  <Badge className={getStatusColor(taskDetails.status)}>
+                    {getStatusName(taskDetails.status)}
+                  </Badge>
+                  
+                  <Badge variant="outline">
+                    {taskDetails.partnerName || "Sem parceiro"}
+                  </Badge>
+                </div>
+              )}
             </CardTitle>
             <CardDescription>Conversas da tarefa</CardDescription>
           </div>
@@ -136,7 +162,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         {user && (
           <ChatInput 
             taskId={taskId} 
-            taskPlate={taskPlate}
+            taskPlate={taskPlate || taskDetails?.plate}
             onSendMessage={handleSendMessage}
             currentUser={user}
           />

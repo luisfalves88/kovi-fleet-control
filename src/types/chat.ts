@@ -1,5 +1,6 @@
 
 import { User } from './index';
+import { Task } from './task';
 
 // Define UserRole here to avoid import cycle issues
 export type UserRole = 'admin' | 'member' | 'partner' | 'driver';
@@ -27,6 +28,7 @@ export interface Conversation {
   taskPlate: string;
   lastMessage: ChatMessage;
   messages: ChatMessage[];
+  task?: Task; // Associated task details
 }
 
 export type MentionUser = {

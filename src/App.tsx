@@ -21,9 +21,7 @@ import Reports from "@/pages/Reports";
 import Profile from "@/pages/Profile";
 
 // Admin Pages
-import Users from "@/pages/admin/Users";
-import Partners from "@/pages/admin/Partners";
-import Units from "@/pages/admin/Units";
+import Settings from "@/pages/admin/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,10 +72,13 @@ const App = () => (
             <Route path="/reports" element={<ProtectedLayout requiredRoles={['admin', 'member']}><Reports /></ProtectedLayout>} />
             <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
             
-            {/* Admin Routes */}
-            <Route path="/users" element={<ProtectedLayout requiredRoles={['admin']}><Users /></ProtectedLayout>} />
-            <Route path="/partners" element={<ProtectedLayout requiredRoles={['admin']}><Partners /></ProtectedLayout>} />
-            <Route path="/units" element={<ProtectedLayout requiredRoles={['admin']}><Units /></ProtectedLayout>} />
+            {/* Admin Routes - Now unified under Settings */}
+            <Route path="/settings" element={<ProtectedLayout requiredRoles={['admin']}><Settings /></ProtectedLayout>} />
+            
+            {/* Legacy routes that redirect to Settings */}
+            <Route path="/users" element={<Navigate to="/settings" replace />} />
+            <Route path="/partners" element={<Navigate to="/settings" replace />} />
+            <Route path="/units" element={<Navigate to="/settings" replace />} />
             
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />
