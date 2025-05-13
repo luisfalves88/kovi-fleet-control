@@ -5,9 +5,15 @@ import Users from './Users';
 import Partners from './Partners';
 import Units from './Units';
 
+// Define the interface that all tab components will use
 interface TabContentProps {
   isTab?: boolean;
 }
+
+// Type assertions to define the components with their props
+const UsersTab = Users as React.ComponentType<TabContentProps>;
+const PartnersTab = Partners as React.ComponentType<TabContentProps>;
+const UnitsTab = Units as React.ComponentType<TabContentProps>;
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -29,15 +35,15 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="users" className="mt-6">
-          <Users isTab={true} />
+          <UsersTab isTab={true} />
         </TabsContent>
         
         <TabsContent value="partners" className="mt-6">
-          <Partners isTab={true} />
+          <PartnersTab isTab={true} />
         </TabsContent>
         
         <TabsContent value="units" className="mt-6">
-          <Units isTab={true} />
+          <UnitsTab isTab={true} />
         </TabsContent>
       </Tabs>
     </div>
