@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users } from './Users';
-import { Partners } from './Partners';
-import { Units } from './Units';
+import Users from './Users';
+import Partners from './Partners';
+import Units from './Units';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("users");
