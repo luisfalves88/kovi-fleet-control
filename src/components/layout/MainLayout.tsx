@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, LogOut, User, Bell, FileText, Users, Settings, Menu } from "lucide-react";
+import { Home, LogOut, User, Bell, FileText, Settings, Menu } from "lucide-react";
 import { Link, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -35,12 +35,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       { icon: FileText, label: 'Relatórios', path: '/reports' },
     ];
 
-    // Admin-only items
-    const adminOnlyItems = [
-      { icon: Users, label: 'Usuários', path: '/users' },
-      { icon: Users, label: 'Parceiros', path: '/partners' },
-      { icon: Settings, label: 'Unidades', path: '/units' },
-    ];
+    // Admin-only item (agora é apenas uma opção de Configurações)
+    const adminOnlyItems = user?.role === 'admin' ? [
+      { icon: Settings, label: 'Configurações', path: '/settings' },
+    ] : [];
 
     let items = [...baseItems];
 
@@ -48,7 +46,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       items = [...items, ...adminMemberItems];
     }
 
-    if (user?.role === 'admin') {
+    if (adminOnlyItems.length > 0) {
       items = [...items, ...adminOnlyItems];
     }
 

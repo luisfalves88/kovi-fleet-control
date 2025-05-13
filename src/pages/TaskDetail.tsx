@@ -5,7 +5,7 @@ import { TaskService } from "@/services/taskService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Phone } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -219,6 +219,26 @@ const TaskDetail = () => {
                         {task.optionalPhone}
                         <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
                           <Phone className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </dd>
+                  </div>
+                )}
+                {task.driverLink && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-gray-500">Rental</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      <div className="flex items-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-2"
+                          asChild
+                        >
+                          <a href={task.driverLink} target="_blank" rel="noopener noreferrer">
+                            Portal do Motorista
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
                         </Button>
                       </div>
                     </dd>
