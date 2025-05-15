@@ -234,7 +234,7 @@ const TaskDetail = () => {
               asChild
             >
               <a href={task.driverLink} target="_blank" rel="noopener noreferrer">
-                Portal do Motorista
+                Perfil do Motorista
                 <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
