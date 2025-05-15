@@ -2,16 +2,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatService } from '@/services/chatService';
-import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, ArrowDownCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ThumbsUp, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Conversation, Message } from '@/types/chat';
 import { Badge } from '@/components/ui/badge';
 import { TaskService } from '@/services/taskService';
 import { getStatusName, getStatusColor } from '@/lib/taskUtils';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { Picker } from 'emoji-mart';
+import 'emoji-mart/css/emoji-mart.css';
+import { v4 as uuidv4 } from 'uuid';
+
+// Avatar personalizado
+const Avatar = ({ user }: { user: { name: string; avatarUrl?: string } }) => {
+  if (user.avatarUrl) {
+    return <img src={user.avatarUrl} alt={user.name} className="w-8 h-8 rounded-full" />;
+  }
+  const initials = user.name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
+  return (
+    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+      {initials}
+    </div>
+  );
+};
 
 interface ChatPanelProps {
   taskId: string;
@@ -24,12 +43,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
   const navigate = useNavigate();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
   const [taskDetails, setTaskDetails] = useState<any>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // WebSocket ref
+  const ws = useRef<WebSocket | null>(null);
+
+  // Fetch conversation + task details
   const fetchConversation = async () => {
     setIsLoading(true);
     try {
@@ -40,28 +62,59 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         ChatService.markConversationAsRead(taskId, user.id);
       }
 
-      const task = await TaskService.getTaskById(taskId);
-      setTaskDetails(task);
+      try {
+        const task = await TaskService.getTaskById(taskId);
+        setTaskDetails(task);
+      } catch (err) {
+        console.error("Error fetching task details:", err);
+      }
     } catch (error) {
-      console.error('Erro ao buscar conversa ou tarefa:', error);
+      console.error("Error fetching chat conversation:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (taskId) fetchConversation();
+    if (taskId) {
+      fetchConversation();
+
+      // Abrir WebSocket e escutar mensagens em tempo real
+      ws.current = new WebSocket(`wss://your-websocket-server.com/chat/${taskId}`);
+
+      ws.current.onmessage = (event) => {
+        const newMessage: Message = JSON.parse(event.data);
+        setConversation((prev) => {
+          if (!prev) return prev;
+          // Evita duplicatas (ex: mensagem enviada pelo próprio user)
+          if (prev.messages.find(m => m.id === newMessage.id)) return prev;
+          return {
+            ...prev,
+            messages: [...prev.messages, newMessage],
+          };
+        });
+      };
+
+      ws.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      return () => {
+        ws.current?.close();
+      };
+    }
   }, [taskId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
+  // Enviar mensagem, adiciona emoji picker integração
   const handleSendMessage = async (text: string, attachment?: string, mentions?: string[]) => {
     if (!user) return;
 
-    setIsTyping(false);
     try {
+      // Envia via service
       await ChatService.sendMessage({
         taskId,
         taskPlate: taskPlate || taskDetails?.plate,
@@ -72,64 +125,64 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         text,
         attachment,
         mentions,
-        read: false
+        read: false,
       });
 
-      fetchConversation();
+      // Limpar emoji picker ao enviar
+      setShowEmojiPicker(false);
+
+      // Não faz fetch, confia no websocket para atualização instantânea
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      console.error("Error sending message:", error);
+    }
+  };
+
+  // Reagir a uma mensagem
+  const handleReact = async (messageId: string, reaction: string) => {
+    try {
+      await ChatService.reactMessage(taskId, messageId, user!.id, reaction);
+
+      // Atualiza localmente (melhora UX)
+      setConversation((prev) => {
+        if (!prev) return prev;
+        const messages = prev.messages.map(m => {
+          if (m.id === messageId) {
+            const newReactions = {...m.reactions};
+            if (newReactions[reaction]?.includes(user!.id)) {
+              // Se já tem, remove reação
+              newReactions[reaction] = newReactions[reaction].filter(uid => uid !== user!.id);
+            } else {
+              // Adiciona reação
+              newReactions[reaction] = newReactions[reaction] ? [...newReactions[reaction], user!.id] : [user!.id];
+            }
+            return {...m, reactions: newReactions};
+          }
+          return m;
+        });
+        return {...prev, messages};
+      });
+    } catch (error) {
+      console.error("Error reacting to message:", error);
     }
   };
 
   const handleNavigate = () => {
-    navigate(fullScreen ? `/tasks/${taskId}` : `/conversations?taskId=${taskId}`);
-  };
-
-  const handleScroll = () => {
-    const el = scrollContainerRef.current;
-    if (el) {
-      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-      setShowScrollButton(!isNearBottom);
+    if (fullScreen) {
+      navigate(`/tasks/${taskId}`);
+    } else {
+      navigate(`/conversations?taskId=${taskId}`);
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setShowScrollButton(false);
-  };
-
-  const renderMessagesGroupedByDate = (messages: Message[]) => {
-    const grouped: { [date: string]: Message[] } = {};
-
-    messages.forEach((msg) => {
-      const date = new Date(msg.timestamp).toLocaleDateString();
-      if (!grouped[date]) grouped[date] = [];
-      grouped[date].push(msg);
-    });
-
-    return Object.entries(grouped).map(([date, msgs]) => (
-      <div key={date} className="space-y-2">
-        <div className="text-center text-xs text-muted-foreground mt-2 mb-4">
-          {date}
-        </div>
-        {msgs.map((msg) => (
-          <ChatMessageComponent key={msg.id} message={msg} highlightMentions={true} />
-        ))}
-      </div>
-    ));
-  };
-
   return (
-    <Card className={`${fullScreen ? "h-full" : "h-[500px]"} flex flex-col overflow-hidden border shadow-sm`}>
-      <CardHeader className="pb-2 pt-4 border-b flex-shrink-0 bg-muted/50">
+    <Card className={`${fullScreen ? "h-full" : "h-[500px]"} flex flex-col overflow-hidden border`}>
+      <CardHeader className="pb-2 pt-4 border-b flex-shrink-0">
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="flex items-center gap-2">
               <span>Chat</span>
               {(taskPlate || taskDetails?.plate) && (
-                <span className="text-sm text-muted-foreground">
-                  ({taskPlate || taskDetails?.plate})
-                </span>
+                <span className="text-sm">({taskPlate || taskDetails?.plate})</span>
               )}
               {taskDetails && (
                 <div className="flex ml-2 gap-2">
@@ -142,7 +195,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
                 </div>
               )}
             </CardTitle>
-            <CardDescription>Mensagens trocadas sobre essa tarefa</CardDescription>
+            <CardDescription>Conversas da tarefa</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -155,51 +208,81 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         </div>
       </CardHeader>
 
-      <div className="flex flex-col flex-1 overflow-hidden relative">
-        <CardContent
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2"
-        >
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <CardContent className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="w-full h-6 rounded" />
-              ))}
+            <div className="flex items-center justify-center h-full">
+              <span>Carregando mensagens...</span>
             </div>
           ) : conversation && conversation.messages.length > 0 ? (
-            renderMessagesGroupedByDate(conversation.messages)
+            <div className="space-y-4">
+              {conversation.messages.map((message) => (
+                <div key={message.id} className="flex gap-3">
+                  <Avatar user={{ name: message.userName, avatarUrl: message.userAvatarUrl }} />
+                  <div className="flex flex-col flex-1">
+                    <div className="flex justify-between items-center">
+                      <strong>{message.userName}</strong>
+                      <small className="text-xs text-gray-500">
+                        {new Date(message.createdAt).toLocaleTimeString()}
+                      </small>
+                    </div>
+                    <p>{message.text}</p>
+
+                    {/* Reações */}
+                    <div className="flex gap-2 mt-1 text-sm text-gray-600">
+                      {['👍', '❤️'].map((emoji) => {
+                        const reacted = message.reactions?.[emoji]?.includes(user?.id ?? '') ?? false;
+                        return (
+                          <button
+                            key={emoji}
+                            className={`px-1 rounded ${reacted ? 'bg-blue-100' : 'hover:bg-gray-200'}`}
+                            onClick={() => handleReact(message.id, emoji)}
+                            title={reacted ? 'Remover reação' : 'Adicionar reação'}
+                            type="button"
+                          >
+                            {emoji} {message.reactions?.[emoji]?.length || 0}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              Nenhuma mensagem. Comece a conversa!
+            <div className="flex items-center justify-center h-full">
+              <span className="text-muted-foreground">
+                Sem mensagens. Inicie uma conversa!
+              </span>
             </div>
           )}
-          {isTyping && (
-            <div className="text-sm text-muted-foreground italic px-2">Digitando...</div>
-          )}
-          <div ref={messagesEndRef} />
         </CardContent>
 
-        {showScrollButton && (
-          <Button
-            onClick={scrollToBottom}
-            variant="secondary"
-            size="icon"
-            className="absolute bottom-20 right-4 shadow-md animate-in fade-in"
-          >
-            <ArrowDownCircle className="h-5 w-5" />
-          </Button>
-        )}
-
         {user && (
-          <ChatInput
-            taskId={taskId}
-            taskPlate={taskPlate || taskDetails?.plate}
-            onSendMessage={handleSendMessage}
-            currentUser={user}
-            onTypingStart={() => setIsTyping(true)}
-            onTypingStop={() => setIsTyping(false)}
-          />
+          <div className="relative">
+            <ChatInput
+              taskId={taskId}
+              taskPlate={taskPlate || taskDetails?.plate}
+              onSendMessage={handleSendMessage}
+              currentUser={user}
+              onEmojiPickerToggle={() => setShowEmojiPicker((v) => !v)}
+            />
+            {showEmojiPicker && (
+              <div className="absolute bottom-full right-0 mb-2 z-50">
+                <Picker
+                  onSelect={(emoji) => {
+                    // Insere emoji no input do ChatInput via callback
+                    // Vamos supor que ChatInput tem um método para isso
+                    // Você pode passar um ref ou um callback para atualizar texto
+                    // Aqui deixo um placeholder para integração
+                    // chatInputRef.current?.insertEmoji(emoji.native);
+                  }}
+                  theme="light"
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
     </Card>
