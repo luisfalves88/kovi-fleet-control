@@ -182,71 +182,84 @@ const TaskDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Task Information */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do Veículo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-4">
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Placa</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{task.plate}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Modelo</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{task.vehicleModel}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Cliente</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{task.customerName}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Telefone</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    <div className="flex items-center">
-                      {task.phone}
-                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </dd>
-                </div>
-                {task.optionalPhone && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Telefone Opcional</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <div className="flex items-center">
-                        {task.optionalPhone}
-                        <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </dd>
-                  </div>
-                )}
-                {task.driverLink && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500">Rental</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      <div className="flex items-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-2"
-                          asChild
-                        >
-                          <a href={task.driverLink} target="_blank" rel="noopener noreferrer">
-                            Portal do Motorista
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </div>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
-          </Card>
+          <CardTitle>Detalhes do Veículo</CardTitle>
+</CardHeader>
+<CardContent>
+  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-4">
+    <div>
+      <dt className="text-sm font-medium text-gray-500">Placa</dt>
+      <dd className="mt-1 text-sm text-gray-900">{task.plate}</dd>
+    </div>
+    <div>
+      <dt className="text-sm font-medium text-gray-500">Modelo</dt>
+      <dd className="mt-1 text-sm text-gray-900">{task.vehicleModel}</dd>
+    </div>
+    <div>
+      <dt className="text-sm font-medium text-gray-500">Cliente</dt>
+      <dd className="mt-1 text-sm text-gray-900">{task.customerName}</dd>
+    </div>
+    <div>
+      <dt className="text-sm font-medium text-gray-500">Telefone</dt>
+      <dd className="mt-1 text-sm text-gray-900">
+        <div className="flex items-center">
+          {task.phone}
+          <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
+            <Phone className="h-4 w-4" />
+          </Button>
+        </div>
+      </dd>
+    </div>
+    {task.optionalPhone && (
+      <div>
+        <dt className="text-sm font-medium text-gray-500">Telefone Opcional</dt>
+        <dd className="mt-1 text-sm text-gray-900">
+          <div className="flex items-center">
+            {task.optionalPhone}
+            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
+              <Phone className="h-4 w-4" />
+            </Button>
+          </div>
+        </dd>
+      </div>
+    )}
+    {task.driverLink && (
+      <div className="sm:col-span-2">
+        <dt className="text-sm font-medium text-gray-500">Rental</dt>
+        <dd className="mt-1 text-sm text-gray-900">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              asChild
+            >
+              <a href={task.driverLink} target="_blank" rel="noopener noreferrer">
+                Portal do Motorista
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+
+            {(user?.role === "Administrador" || user?.role === "Membro Kovi") && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="flex items-center gap-2"
+                asChild
+              >
+                <a href={task.driverLink} target="_blank" rel="noopener noreferrer">
+                  Rental
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+          </div>
+        </dd>
+      </div>
+    )}
+  </dl>
+</CardContent>
+</Card>
+
 
           <Card>
             <CardHeader>
