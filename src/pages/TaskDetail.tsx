@@ -367,5 +367,48 @@ function getStatusColor(status: string) {
   };
   return map[status] || "bg-gray-200 text-gray-800";
 }
+// Continuando o componente TaskDetail
+
+// Dentro do componente TaskDetail, após os estados...
+
+// Handler para alocar motorista
+const handleAssignDriver = async () => {
+  if (!selectedDriverId) return;
+  try {
+    await TaskService.assignDriver(task.id, selectedDriverId);
+    alert(`Motorista ${selectedDriverName} alocado com sucesso!`);
+    setIsAssignDriverDialogOpen(false);
+    // Aqui você pode recarregar a task ou atualizar o estado local
+  } catch (error) {
+    alert("Erro ao alocar motorista. Tente novamente.");
+  }
+};
+
+// Handler para cancelar tarefa
+const handleCancelTask = async () => {
+  if (!cancelReason) return;
+  try {
+    await TaskService.cancelTask(task.id, {
+      reason: cancelReason,
+      comments: cancelComments,
+    });
+    alert("Tarefa cancelada com sucesso.");
+    setIsCancelDialogOpen(false);
+    // Atualize o estado ou recarregue a tarefa
+  } catch (error) {
+    alert("Erro ao cancelar a tarefa. Tente novamente.");
+  }
+};
+
+// Handler para atualizar status
+const handleUpdateStatus = async (newStatus: string) => {
+  try {
+    await TaskService.updateStatus(task.id, newStatus);
+    alert(`Status atualizado para: ${getStatusName(newStatus)}`);
+    // Atualize o estado local ou recarregue a tarefa
+  } catch (error) {
+    alert("Erro ao atualizar o status. Tente novamente.");
+  }
+};
 
 export default TaskDetail;
