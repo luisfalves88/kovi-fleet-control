@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { Heart, Check } from 'lucide-react';
+import { pt } from 'date-fns/locale';
+import { Heart, Check, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ChatService, mockUsers } from '@/services/chatService';
+import { ChatService } from '@/services/chatService';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -46,17 +48,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     }
   };
   
-  // Highlight mentioned users if needed
   const renderMessageText = () => {
     if (!highlightMentions || !message.mentions?.length) {
       return message.text;
     }
-    
-    // Simple version - just highlight that there are mentions
-    const mentionedUsers = message.mentions.map(userId => {
-      const mentionedUser = mockUsers.find(u => u.id === userId);
-      return mentionedUser ? `@${mentionedUser.name}` : `@usuário`;
-    }).join(', ');
     
     if (message.text.includes('@')) {
       return <span>
@@ -69,8 +64,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           
           return (
             <React.Fragment key={i}>
-              <span className="text-blue-600 font-medium">@{mention}</span>
-              {' ' + rest}
+              <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">
+                @{mention}
+              </span>
+              {rest && ' ' + rest}
             </React.Fragment>
           );
         })}
@@ -84,25 +81,29 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const isCurrentUser = user && message.userId === user.id;
   
   return (
-    <div className={`flex gap-3 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-      {!isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary/10 text-xs">
-            {message.userName.substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-      )}
+    <div className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarFallback className="bg-primary/10 text-xs">
+          {message.userName.substring(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
       
       <div className={`flex flex-col max-w-[75%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-        {!isCurrentUser && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{message.userName}</span>
-            <span className="text-xs text-muted-foreground">{message.userRole}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-medium">{message.userName}</span>
+          <Badge variant="outline" className="text-xs">
+            {message.userCompany}
+          </Badge>
+          {isMentioned && (
+            <Badge variant="default" className="text-xs bg-blue-500">
+              <AtSign className="h-3 w-3 mr-1" />
+              Mencionado
+            </Badge>
+          )}
+        </div>
         
         <div 
-          className={`px-3 py-2 rounded-lg ${
+          className={`px-3 py-2 rounded-lg max-w-full ${
             isCurrentUser 
               ? 'bg-primary text-primary-foreground' 
               : isMentioned
@@ -110,7 +111,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 : 'bg-muted'
           }`}
         >
-          <div className="text-sm">
+          <div className="text-sm break-words">
             {renderMessageText()}
           </div>
           
@@ -118,16 +119,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <div className="mt-2">
               <img 
                 src={message.attachment} 
-                alt="Attachment" 
-                className="max-w-full rounded-md" 
+                alt="Anexo" 
+                className="max-w-full rounded-md border" 
                 style={{ maxHeight: '200px' }}
               />
             </div>
           )}
           
-          <div className="flex justify-between items-center mt-1 gap-2">
+          <div className="flex justify-between items-center mt-2 gap-2">
             <span className="text-xs opacity-70">
-              {format(new Date(message.timestamp), 'HH:mm')}
+              {format(new Date(message.timestamp), 'dd/MM HH:mm', { locale: pt })}
             </span>
             
             <div className="flex items-center gap-2">
@@ -135,21 +136,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 <Check size={12} className="opacity-70" />
               )}
               
-              {likeCount > 0 && (
-                <span className="text-xs opacity-70">{likeCount}</span>
-              )}
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                onClick={handleLike}
-              >
-                <Heart 
-                  size={12}
-                  className={isLiked ? 'fill-red-500 text-red-500' : 'opacity-70'}
-                />
-              </Button>
+              <div className="flex items-center gap-1">
+                {likeCount > 0 && (
+                  <span className="text-xs opacity-70">{likeCount}</span>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleLike}
+                >
+                  <Heart 
+                    size={12}
+                    className={isLiked ? 'fill-red-500 text-red-500' : 'opacity-70'}
+                  />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
