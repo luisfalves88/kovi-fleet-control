@@ -10,9 +10,6 @@ import { ChatService } from '@/services/chatService';
 import { User } from '@/types';
 import { MentionUser } from '@/types/chat';
 
-import { Picker } from 'emoji-mart';
-import 'emoji-mart/css/emoji-mart.css';
-
 interface ChatInputProps {
   taskId: string;
   taskPlate?: string;
@@ -35,7 +32,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [filteredUsers, setFilteredUsers] = useState<MentionUser[]>([]);
   const [mentions, setMentions] = useState<string[]>([]);
   const [atPosition, setAtPosition] = useState<number | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -198,32 +194,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               rows={2}
             />
 
-            {/* Emoji Picker Popover */}
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-8 bottom-2 h-6 w-6"
-                  aria-label="Escolher emoji"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                >
-                  😊
-                </Button>
-              </PopoverTrigger>
-
-              <PopoverContent className="w-72 p-0" align="end">
-                <Picker
-                  onSelect={insertEmojiAtCursor}
-                  title="Escolha um emoji"
-                  emoji="point_up"
-                  theme="light"
-                  style={{ width: '100%' }}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {/* Mention Popover */}
             <Popover open={showMentions} onOpenChange={setShowMentions}>
               <PopoverTrigger asChild>
                 <Button

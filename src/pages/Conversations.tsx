@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChatService } from '@/services/chatService';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Card, CardHeader, CardTitle, CardDescription, CardContent,
-  Button, Input, Tabs, TabsList, TabsTrigger, TabsContent,
-  Badge, ScrollArea,
-  DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger
-} from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { Search, MessageSquare, AtSign, Pin, Filter } from 'lucide-react';
 import { format } from 'date-fns';

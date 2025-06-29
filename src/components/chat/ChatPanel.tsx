@@ -6,14 +6,10 @@ import { ChatInput } from './ChatInput';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, ThumbsUp, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Conversation, Message } from '@/types/chat';
+import { Conversation, ChatMessage } from '@/types/chat';
 import { Badge } from '@/components/ui/badge';
 import { TaskService } from '@/services/taskService';
 import { getStatusName, getStatusColor } from '@/lib/taskUtils';
-
-import { Picker } from 'emoji-mart';
-import 'emoji-mart/css/emoji-mart.css';
-import { v4 as uuidv4 } from 'uuid';
 
 // Avatar personalizado
 const Avatar = ({ user }: { user: { name: string; avatarUrl?: string } }) => {
@@ -46,8 +42,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
   const [taskDetails, setTaskDetails] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
   // WebSocket ref
   const ws = useRef<WebSocket | null>(null);
 
@@ -79,25 +73,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
     if (taskId) {
       fetchConversation();
 
-      // Abrir WebSocket e escutar mensagens em tempo real
-      ws.current = new WebSocket(`wss://your-websocket-server.com/chat/${taskId}`);
-
-      ws.current.onmessage = (event) => {
-        const newMessage: Message = JSON.parse(event.data);
-        setConversation((prev) => {
-          if (!prev) return prev;
-          // Evita duplicatas (ex: mensagem enviada pelo próprio user)
-          if (prev.messages.find(m => m.id === newMessage.id)) return prev;
-          return {
-            ...prev,
-            messages: [...prev.messages, newMessage],
-          };
-        });
-      };
-
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
+      // Mock WebSocket simulation
+      // ws.current = new WebSocket(`wss://your-websocket-server.com/chat/${taskId}`);
 
       return () => {
         ws.current?.close();
@@ -109,12 +86,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
-  // Enviar mensagem, adiciona emoji picker integração
+  // Enviar mensagem
   const handleSendMessage = async (text: string, attachment?: string, mentions?: string[]) => {
     if (!user) return;
 
     try {
-      // Envia via service
       await ChatService.sendMessage({
         taskId,
         taskPlate: taskPlate || taskDetails?.plate,
@@ -128,10 +104,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         read: false,
       });
 
-      // Limpar emoji picker ao enviar
-      setShowEmojiPicker(false);
-
-      // Não faz fetch, confia no websocket para atualização instantânea
+      // Refetch conversation to update UI
+      fetchConversation();
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -260,29 +234,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
         </CardContent>
 
         {user && (
-          <div className="relative">
-            <ChatInput
-              taskId={taskId}
-              taskPlate={taskPlate || taskDetails?.plate}
-              onSendMessage={handleSendMessage}
-              currentUser={user}
-              onEmojiPickerToggle={() => setShowEmojiPicker((v) => !v)}
-            />
-            {showEmojiPicker && (
-              <div className="absolute bottom-full right-0 mb-2 z-50">
-                <Picker
-                  onSelect={(emoji) => {
-                    // Insere emoji no input do ChatInput via callback
-                    // Vamos supor que ChatInput tem um método para isso
-                    // Você pode passar um ref ou um callback para atualizar texto
-                    // Aqui deixo um placeholder para integração
-                    // chatInputRef.current?.insertEmoji(emoji.native);
-                  }}
-                  theme="light"
-                />
-              </div>
-            )}
-          </div>
+          <ChatInput
+            taskId={taskId}
+            taskPlate={taskPlate || taskDetails?.plate}
+            onSendMessage={handleSendMessage}
+            currentUser={user}
+          />
         )}
       </div>
     </Card>

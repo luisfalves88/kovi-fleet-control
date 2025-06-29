@@ -13,12 +13,15 @@ export interface ChatMessage {
   userName: string;
   userRole: UserRole;
   userCompany: string;
+  userAvatarUrl?: string; // Added avatar URL
   text: string;
   timestamp: Date;
+  createdAt: Date; // Added createdAt
   read: boolean;
   attachment?: string; // URL for an image attachment
   mentions?: string[]; // List of user IDs mentioned in the message
   likes: string[]; // List of user IDs who liked the message
+  reactions?: Record<string, string[]>; // Added reactions object
   replyToMessageId?: string; // ID of the message this is replying to
 }
 

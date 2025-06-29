@@ -1,4 +1,3 @@
-
 import { ChatMessage, Conversation, MentionUser, UserRole } from '@/types/chat';
 
 // Mock users for mentions
@@ -32,6 +31,7 @@ const generateMockConversations = (): Conversation[] => {
       const user = mockUsers[Math.floor(Math.random() * mockUsers.length)];
       
       // Create a message
+      const timestamp = new Date(Date.now() - Math.floor(Math.random() * 10 * 24 * 60 * 60 * 1000));
       const message: ChatMessage = {
         id: `msg-${i}-${j}`,
         taskId,
@@ -48,10 +48,12 @@ const generateMockConversations = (): Conversation[] => {
           "Cliente não atende ao telefone.",
           "Veículo não está no endereço informado."
         ][Math.floor(Math.random() * 6)],
-        timestamp: new Date(Date.now() - Math.floor(Math.random() * 10 * 24 * 60 * 60 * 1000)),
+        timestamp,
+        createdAt: timestamp,
         read: Math.random() > 0.3,
         likes: [],
-        mentions: []
+        mentions: [],
+        reactions: {}
       };
       
       // Randomly add mentions
@@ -139,13 +141,16 @@ export const ChatService = {
   },
   
   // Send a new message
-  sendMessage: async (messageData: Omit<ChatMessage, "id" | "timestamp" | "likes">) => {
+  sendMessage: async (messageData: Omit<ChatMessage, "id" | "timestamp" | "likes" | "createdAt" | "reactions">) => {
     await delay(300);
     
+    const timestamp = new Date();
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
-      timestamp: new Date(),
+      timestamp,
+      createdAt: timestamp,
       likes: [],
+      reactions: {},
       ...messageData
     };
     
@@ -204,6 +209,51 @@ export const ChatService = {
             likes: hasLiked 
               ? msg.likes.filter(id => id !== userId) 
               : [...msg.likes, userId]
+          };
+        }
+        return msg;
+      });
+      
+      return {
+        ...conv,
+        messages: updatedMessages,
+        lastMessage: updatedMessages.slice(-1)[0] || conv.lastMessage
+      };
+    });
+    
+    return found;
+  },
+  
+  // React to a message
+  reactMessage: async (taskId: string, messageId: string, userId: string, reaction: string) => {
+    await delay(200);
+    
+    let found = false;
+    
+    mockConversations = mockConversations.map(conv => {
+      if (conv.taskId !== taskId) return conv;
+      
+      const updatedMessages = conv.messages.map(msg => {
+        if (msg.id === messageId) {
+          found = true;
+          const reactions = { ...msg.reactions } || {};
+          
+          if (!reactions[reaction]) {
+            reactions[reaction] = [];
+          }
+          
+          // Toggle reaction
+          const hasReacted = reactions[reaction].includes(userId);
+          
+          if (hasReacted) {
+            reactions[reaction] = reactions[reaction].filter(id => id !== userId);
+          } else {
+            reactions[reaction] = [...reactions[reaction], userId];
+          }
+          
+          return {
+            ...msg,
+            reactions
           };
         }
         return msg;
