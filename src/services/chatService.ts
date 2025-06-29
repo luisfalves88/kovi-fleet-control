@@ -236,7 +236,7 @@ export const ChatService = {
       const updatedMessages = conv.messages.map(msg => {
         if (msg.id === messageId) {
           found = true;
-          const reactions = { ...msg.reactions } || {};
+          const reactions = msg.reactions ? { ...msg.reactions } : {};
           
           if (!reactions[reaction]) {
             reactions[reaction] = [];
