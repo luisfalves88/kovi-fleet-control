@@ -23,6 +23,12 @@ const generateMockTasks = (): Task[] => {
     const createdAt = new Date();
     createdAt.setDate(createdAt.getDate() - Math.floor(Math.random() * 30));
     
+    // Generate a scheduled date (usually within the next 7 days)
+    const scheduledAt = new Date();
+    scheduledAt.setDate(scheduledAt.getDate() + Math.floor(Math.random() * 7));
+    scheduledAt.setHours(Math.floor(Math.random() * 12) + 8); // Between 8 AM and 8 PM
+    scheduledAt.setMinutes(Math.floor(Math.random() * 4) * 15); // 0, 15, 30, or 45 minutes
+    
     const id = `TASK-${1000 + i}`;
     const plate = `ABC${1000 + i}`;
     
@@ -40,6 +46,8 @@ const generateMockTasks = (): Task[] => {
       unitId: ["1", "2"][Math.floor(Math.random() * 2)],
       unitName: ["Unidade Centro", "Unidade Sul"][Math.floor(Math.random() * 2)],
       observations: Math.random() > 0.5 ? "Cliente informou que o carro está estacionado na garagem do prédio" : undefined,
+      driverLink: Math.random() > 0.5 ? `https://rental-driver.example.com/task/${id}` : undefined,
+      scheduledAt,
       status,
       createdAt,
       updatedAt: new Date(),
@@ -143,6 +151,7 @@ export const TaskService = {
       unitName: taskData.unitName || "",
       observations: taskData.observations,
       driverLink: taskData.driverLink,
+      scheduledAt: taskData.scheduledAt,
       status: "allocateDriver",
       createdAt: new Date(),
       updatedAt: new Date(),

@@ -15,6 +15,7 @@ export interface Task {
   unitName: string;
   observations?: string;
   driverLink?: string;
+  scheduledAt?: Date; // Added scheduled date field
   status: TaskStatus;
   createdAt: Date;
   updatedAt: Date;

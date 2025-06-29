@@ -5,10 +5,11 @@ import { TaskService } from "@/services/taskService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Phone, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, ExternalLink, Car } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { ScheduleInfo } from '@/components/tasks/ScheduleInfo';
 
 const TaskDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -217,18 +218,36 @@ const TaskDetail = () => {
                     </dd>
                   </div>
                 )}
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Agendamento</dt>
-                  <dd className="mt-1 text-sm text-gray-900 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(task.scheduledAt), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: pt })}
-                  </dd>
-                </div>
+                {task.scheduledAt && (
+                  <div className="col-span-2">
+                    <dt className="text-sm font-medium text-gray-500">Agendamento</dt>
+                    <dd className="mt-1 text-sm text-gray-900 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {format(new Date(task.scheduledAt), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: pt })}
+                    </dd>
+                  </div>
+                )}
               </dl>
+              
+              {/* Rental button */}
+              {task.driverLink && (
+                <div className="mt-4 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.open(task.driverLink, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <Car className="h-4 w-4" />
+                    Rental
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Additional cards as needed */}
+          {/* Schedule Information */}
+          <ScheduleInfo scheduledAt={task.scheduledAt} createdAt={task.createdAt} />
         </div>
 
         {/* Actions sidebar */}
@@ -367,48 +386,5 @@ function getStatusColor(status: string) {
   };
   return map[status] || "bg-gray-200 text-gray-800";
 }
-// Continuando o componente TaskDetail
-
-// Dentro do componente TaskDetail, após os estados...
-
-// Handler para alocar motorista
-const handleAssignDriver = async () => {
-  if (!selectedDriverId) return;
-  try {
-    await TaskService.assignDriver(task.id, selectedDriverId);
-    alert(`Motorista ${selectedDriverName} alocado com sucesso!`);
-    setIsAssignDriverDialogOpen(false);
-    // Aqui você pode recarregar a task ou atualizar o estado local
-  } catch (error) {
-    alert("Erro ao alocar motorista. Tente novamente.");
-  }
-};
-
-// Handler para cancelar tarefa
-const handleCancelTask = async () => {
-  if (!cancelReason) return;
-  try {
-    await TaskService.cancelTask(task.id, {
-      reason: cancelReason,
-      comments: cancelComments,
-    });
-    alert("Tarefa cancelada com sucesso.");
-    setIsCancelDialogOpen(false);
-    // Atualize o estado ou recarregue a tarefa
-  } catch (error) {
-    alert("Erro ao cancelar a tarefa. Tente novamente.");
-  }
-};
-
-// Handler para atualizar status
-const handleUpdateStatus = async (newStatus: string) => {
-  try {
-    await TaskService.updateStatus(task.id, newStatus);
-    alert(`Status atualizado para: ${getStatusName(newStatus)}`);
-    // Atualize o estado local ou recarregue a tarefa
-  } catch (error) {
-    alert("Erro ao atualizar o status. Tente novamente.");
-  }
-};
 
 export default TaskDetail;
