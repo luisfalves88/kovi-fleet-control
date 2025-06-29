@@ -17,6 +17,7 @@ import Dashboard from "@/pages/Dashboard";
 import Tasks from "@/pages/Tasks";
 import TaskDetail from "@/pages/TaskDetail";
 import Conversations from "@/pages/Conversations";
+import ChatPage from "@/pages/ChatPage";
 import Reports from "@/pages/Reports";
 import Profile from "@/pages/Profile";
 
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/tasks" element={<ProtectedLayout><Tasks /></ProtectedLayout>} />
             <Route path="/tasks/:id" element={<ProtectedLayout><TaskDetail /></ProtectedLayout>} />
             <Route path="/conversations" element={<ProtectedLayout requiredRoles={['admin', 'member', 'partner']}><Conversations /></ProtectedLayout>} />
+            <Route path="/chat/:taskId" element={<ProtectedLayout requiredRoles={['admin', 'member', 'partner']}><ChatPage /></ProtectedLayout>} />
             <Route path="/reports" element={<ProtectedLayout requiredRoles={['admin', 'member']}><Reports /></ProtectedLayout>} />
             <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
             

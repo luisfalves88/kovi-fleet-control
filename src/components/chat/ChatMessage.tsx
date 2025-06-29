@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { Heart, Check, AtSign } from 'lucide-react';
+import { Heart, Check, AtSign, Smile, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { ChatService } from '@/services/chatService';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
@@ -24,6 +25,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(message.likes.includes(user?.id || ''));
   const [likeCount, setLikeCount] = useState(message.likes.length);
+  const [reactions, setReactions] = useState(message.reactions || {});
   
   const handleLike = async () => {
     if (!user) return;
@@ -47,6 +49,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       console.error('Error liking message:', error);
     }
   };
+
+  const handleReaction = async (emoji: string) => {
+    if (!user) return;
+    
+    try {
+      await ChatService.reactMessage(message.taskId, message.id, user.id, emoji);
+      
+      // Update local reactions state
+      setReactions(prev => {
+        const newReactions = { ...prev };
+        if (!newReactions[emoji]) {
+          newReactions[emoji] = [];
+        }
+        
+        const hasReacted = newReactions[emoji].includes(user.id);
+        if (hasReacted) {
+          newReactions[emoji] = newReactions[emoji].filter(id => id !== user.id);
+        } else {
+          newReactions[emoji] = [...newReactions[emoji], user.id];
+        }
+        
+        return newReactions;
+      });
+    } catch (error) {
+      console.error('Error reacting to message:', error);
+    }
+  };
   
   const renderMessageText = () => {
     if (!highlightMentions || !message.mentions?.length) {
@@ -54,24 +83,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     }
     
     if (message.text.includes('@')) {
-      return <span>
-        {message.text.split('@').map((part, i) => {
-          if (i === 0) return part;
-          
-          const restParts = part.split(' ');
-          const mention = restParts.shift();
-          const rest = restParts.join(' ');
-          
-          return (
-            <React.Fragment key={i}>
-              <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">
-                @{mention}
-              </span>
-              {rest && ' ' + rest}
-            </React.Fragment>
-          );
-        })}
-      </span>;
+      return message.text.split('@').map((part, i) => {
+        if (i === 0) return part;
+        
+        const restParts = part.split(' ');
+        const mention = restParts.shift();
+        const rest = restParts.join(' ');
+        
+        return (
+          <span key={i}>
+            <span className="text-blue-600 font-medium bg-blue-50 px-1 rounded">
+              @{mention}
+            </span>
+            {rest && ' ' + rest}
+          </span>
+        );
+      });
     }
     
     return message.text;
@@ -152,10 +179,55 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     className={isLiked ? 'fill-red-500 text-red-500' : 'opacity-70'}
                   />
                 </Button>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                    >
+                      <Smile size={12} className="opacity-70" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2">
+                    <div className="flex gap-1">
+                      {['👍', '❤️', '😊', '😂', '😮', '😢'].map((emoji) => (
+                        <Button
+                          key={emoji}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleReaction(emoji)}
+                        >
+                          {emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Render reactions */}
+        {Object.entries(reactions).some(([_, users]) => users.length > 0) && (
+          <div className="flex gap-1 mt-1">
+            {Object.entries(reactions).map(([emoji, users]) => 
+              users.length > 0 ? (
+                <Badge 
+                  key={emoji}
+                  variant="secondary" 
+                  className="text-xs cursor-pointer"
+                  onClick={() => handleReaction(emoji)}
+                >
+                  {emoji} {users.length}
+                </Badge>
+              ) : null
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
