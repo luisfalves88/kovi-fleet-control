@@ -5,7 +5,7 @@ import { TaskService } from "@/services/taskService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Phone, ExternalLink, Car } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, ExternalLink, Car, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -160,7 +160,7 @@ const TaskDetail = () => {
         <Button variant="outline" size="icon" onClick={() => navigate('/tasks')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             {task.plate}
             <Badge className={getStatusColor(task.status)}>
@@ -171,6 +171,14 @@ const TaskDetail = () => {
             Detalhes da tarefa de recolha
           </p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(`/chat/${task.id}`)}
+          className="flex items-center gap-2"
+        >
+          <MessageSquare className="h-4 w-4" />
+          Chat
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -6,21 +6,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Conversation } from "@/types/chat";
 import { ConversationSearch } from "@/components/chat/ConversationSearch";
 import { ConversationFilter } from "@/components/chat/ConversationFilter";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { MessageSquare, Clock, AtSign } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { MessageSquare, Clock, AtSign, ArrowLeft } from "lucide-react";
 
 const Conversations = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations"],
@@ -89,8 +89,45 @@ const Conversations = () => {
   };
 
   const handleConversationClick = (conversation: Conversation) => {
-    navigate(`/tasks/${conversation.taskId}`);
+    setSelectedConversation(conversation.taskId);
   };
+
+  const handleBackToList = () => {
+    setSelectedConversation(null);
+  };
+
+  // Show chat panel when conversation is selected
+  if (selectedConversation) {
+    const conversation = conversations?.find(c => c.taskId === selectedConversation);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleBackToList}
+            title="Voltar para conversas"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              Chat - {conversation?.taskPlate}
+            </h1>
+            <p className="text-muted-foreground">
+              Conversa sobre esta tarefa
+            </p>
+          </div>
+        </div>
+        
+        <ChatPanel 
+          taskId={selectedConversation} 
+          taskPlate={conversation?.taskPlate}
+          fullScreen={true}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

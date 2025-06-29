@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,37 +99,39 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ taskId, taskPlate, fullScr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleNavigateBack}
-          title="Voltar para conversas"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            Chat - {taskPlate || taskDetails?.plate}
-            {taskDetails && (
-              <div className="flex gap-2">
-                <Badge className={getStatusColor(taskDetails.status)}>
-                  {getStatusName(taskDetails.status)}
-                </Badge>
-                <Badge variant="outline">
-                  {taskDetails.partnerName || "Sem parceiro"}
-                </Badge>
-              </div>
-            )}
-          </h1>
-          <p className="text-muted-foreground">
-            Conversas sobre esta tarefa
-          </p>
+      {!fullScreen && (
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleNavigateBack}
+            title="Voltar para conversas"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              Chat - {taskPlate || taskDetails?.plate}
+              {taskDetails && (
+                <div className="flex gap-2">
+                  <Badge className={getStatusColor(taskDetails.status)}>
+                    {getStatusName(taskDetails.status)}
+                  </Badge>
+                  <Badge variant="outline">
+                    {taskDetails.partnerName || "Sem parceiro"}
+                  </Badge>
+                </div>
+              )}
+            </h1>
+            <p className="text-muted-foreground">
+              Conversas sobre esta tarefa
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <Card className="h-[600px] flex flex-col">
+      <Card className={`${fullScreen ? 'h-[calc(100vh-8rem)]' : 'h-[600px]'} flex flex-col`}>
         <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
           {conversation && conversation.messages.length > 0 ? (
             <>

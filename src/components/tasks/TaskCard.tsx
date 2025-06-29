@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Task } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { Calendar, Car, Clock, MapPin, User } from 'lucide-react';
+import { Calendar, Car, Clock, MapPin, User, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -69,14 +68,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="pt-2">
-        <Button 
-          variant="default" 
-          className="w-full"
-          onClick={() => navigate(`/tasks/${task.id}`)}
-        >
-          Ver Detalhes
-        </Button>
+      <CardFooter className="pt-2 space-y-2">
+        <div className="flex gap-2 w-full">
+          <Button 
+            variant="default" 
+            className="flex-1"
+            onClick={() => navigate(`/tasks/${task.id}`)}
+          >
+            Ver Detalhes
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => navigate(`/chat/${task.id}`)}
+            title="Abrir chat"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
